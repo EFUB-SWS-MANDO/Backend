@@ -37,7 +37,7 @@ public class InterviewSession extends BaseTimeEntity {
     private InterviewSessionStatus status;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "type", nullable = false)
+    @Column(name = "type", nullable = false, updatable = false)
     private InterviewSessionType type;
 
     @Column(name = "summary", columnDefinition = "TEXT")
