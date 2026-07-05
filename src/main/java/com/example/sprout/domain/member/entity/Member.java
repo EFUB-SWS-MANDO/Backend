@@ -11,9 +11,6 @@ import lombok.NoArgsConstructor;
 @Entity
 @Getter
 @Table(name = "members",
-        indexes = {
-            @Index(name = "idx_member_oauth", columnList="oauth_provider, oauth_id")
-        },
         uniqueConstraints = {
             @UniqueConstraint(columnNames = {"oauth_provider", "oauth_id"})
         }
@@ -23,7 +20,7 @@ public class Member extends BaseTimeEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "id", nullable = false, updatable = false)
+    @Column(name = "id")
     private Long id;
 
     @Enumerated(EnumType.STRING)
