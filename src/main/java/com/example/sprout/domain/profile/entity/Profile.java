@@ -16,7 +16,7 @@ public class Profile extends BaseTimeEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "id", nullable = false, updatable = false)
+    @Column(name = "id")
     private Long id;
 
     @OneToOne (fetch = FetchType.LAZY)
@@ -46,9 +46,9 @@ public class Profile extends BaseTimeEntity {
     }
 
     public void updateProfile (String nickname, String profileImage, String bio) {
-        this.nickname = nickname;
-        this.profileImage = profileImage;
-        this.bio = bio;
+        if (nickname != null) this.nickname = nickname;
+        if (profileImage!= null) this.profileImage = profileImage;
+        if (bio != null) this.bio = bio;
     }
 
     //TODO: 레벨 업데이트 조건 추후 결정 필요
