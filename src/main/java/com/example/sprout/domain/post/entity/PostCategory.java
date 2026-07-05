@@ -25,7 +25,7 @@ public class PostCategory extends BaseCreatedEntity {
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "category_id", nullable = false)
+    @JoinColumn(name = "category_id", nullable = false, updatable = false)
     private Category category;
 
     @ManyToOne(fetch = FetchType.LAZY)
