@@ -3,6 +3,7 @@ package com.example.sprout.domain.category.entity;
 import com.example.sprout.domain.category.enums.CategoryType;
 import com.example.sprout.global.common.entity.BaseTimeEntity;
 import jakarta.persistence.*;
+import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -10,7 +11,7 @@ import lombok.NoArgsConstructor;
 @Entity
 @Getter
 @Table(name = "categories")
-@NoArgsConstructor
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class Category extends BaseTimeEntity {
 
     @Id
