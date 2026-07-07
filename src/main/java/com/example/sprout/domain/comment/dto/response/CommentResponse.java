@@ -1,7 +1,7 @@
 package com.example.sprout.domain.comment.dto.response;
 
 import com.example.sprout.domain.comment.entity.Comment;
-import com.example.sprout.domain.member.dto.SimpleMemberDto;
+import com.example.sprout.domain.comment.dto.response.SimpleMemberDto;
 import com.example.sprout.domain.profile.entity.Profile;
 
 import java.time.LocalDateTime;
@@ -14,10 +14,10 @@ public record CommentResponse(
         String content,
         LocalDateTime updatedAt
 ) {
-    public static CommentResponse of(Comment comment, Profile authorProfile, boolean isFollowingAuthor) {
+    public static CommentResponse of(Comment comment, Profile authorProfile) {
         return new CommentResponse(
                 comment.getId(),
-                SimpleMemberDto.of(authorProfile, isFollowingAuthor),
+                SimpleMemberDto.from(authorProfile),
                 comment.getParent() != null ? comment.getParent().getId() : null,
                 comment.getContent(),
                 comment.getUpdatedAt()
