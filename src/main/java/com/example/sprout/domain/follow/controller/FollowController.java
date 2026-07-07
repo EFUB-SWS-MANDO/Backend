@@ -5,6 +5,7 @@ import com.example.sprout.domain.follow.service.FollowService;
 import com.example.sprout.global.common.response.ApiResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -28,7 +29,9 @@ public class FollowController {
 
         FollowCreateResponse response = followService.createFollow(requesterId, followeeId);
 
-        return ResponseEntity.ok(ApiResponse.success("팔로우 생성 성공", response));
+        return ResponseEntity
+                .status(HttpStatus.CREATED)
+                .body(ApiResponse.success("팔로우 생성 성공", response));
     }
 
     // 팔로우 취소
