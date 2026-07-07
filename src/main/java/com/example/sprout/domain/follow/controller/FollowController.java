@@ -32,5 +32,18 @@ public class FollowController {
     }
 
     // 팔로우 취소
+    @DeleteMapping
+    public ResponseEntity<ApiResponse<Void>> deleteFollow(
+            @PathVariable(name = "memberId") Long followeeId
+    ) {
+        // TODO: JWT 연동 후 AuthenticationPrincipal에서 memberId 조회
+        Long requesterId = 1L;
+
+        log.info("Follow 취소 요청 - followerId={}, followeeId={}", requesterId, followeeId);
+
+        followService.deleteFollow(requesterId, followeeId);
+
+        return ResponseEntity.ok(ApiResponse.success("팔로우 취소 성공"));
+    }
 
 }

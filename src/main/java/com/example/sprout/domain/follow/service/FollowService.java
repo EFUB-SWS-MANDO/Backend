@@ -40,11 +40,28 @@ public class FollowService {
         return FollowCreateResponse.from(savedFollow);
     }
 
+    // 팔로우 취소
+    @Transactional
+    public void deleteFollow(Long requesterId, Long followeeId) {
+
+        Follow follow = getFollow(requesterId, followeeId);
+
+        followRepository.delete(follow);
+
+        log.info("Follow 취소 완료 - followerId={}, followeeId={}", requesterId, followeeId);
+
+    }
+
     // === Helper method ===
     private Member getMember(Long memberId) {
         // TODO: Member 도메인 Not Found ErrorCode로 수정
         return memberRepository.findById(memberId)
                 .orElseThrow(() -> new BusinessException(GlobalErrorCode.RESOURCE_NOT_FOUND));
+    }
+
+    private Follow getFollow(Long followerId, Long followeeId) {
+        return followRepository.findByFollowerIdAndFolloweeId(followerId, followeeId)
+                .orElseThrow(() -> new BusinessException(FollowErrorCode.FOLLOW_NOT_FOUND));
     }
 
     private void validateNotSelfFollow(Long requesterId, Long followeeId) {
