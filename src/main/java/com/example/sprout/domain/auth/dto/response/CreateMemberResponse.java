@@ -12,16 +12,4 @@ public record CreateMemberResponse (
     long expiresIn,
     LocalDateTime expiresAt,
     boolean isNewUser
-) {
-    public static CreateMemberResponse of (Long memberId, String accessToken, String refreshToken,
-                                           long expiresIn, LocalDateTime expiresAt, boolean isNewUser) {
-        return CreateMemberResponse.builder()
-                .memberId(memberId)
-                .accessToken(accessToken)
-                .refreshToken(refreshToken)
-                .expiresIn(expiresIn)
-                .expiresAt(expiresAt)
-                .isNewUser(isNewUser)
-                .build();
-    }
-}
+) {}
