@@ -28,7 +28,7 @@ public class AuthService {
 
     public CreateMemberResponse signIn(CreateMemberRequest request) {
         OauthApiClient client = findClient(request.provider());
-        OauthUserInfo userInfo = client.getUserInfo(request.kakaoAccessToken());
+        OauthUserInfo userInfo = client.getUserInfo(request.oauthAccessToken());
 
         Optional<Member> existingMember = memberRepository.findByOauthIdAndOauthProvider(userInfo.getProviderId(), request.provider());
         boolean isNewUser = existingMember.isEmpty();
