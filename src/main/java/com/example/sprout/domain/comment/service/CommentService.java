@@ -30,7 +30,6 @@ public class CommentService {
     private final MemberRepository memberRepository;
     private final ProfileRepository profileRepository;
     private final PostRepository postRepository;
-    private final FollowRepository followRepository;
     private final CommentRepository commentRepository;
 
     // 댓글 생성
@@ -38,7 +37,7 @@ public class CommentService {
     public ApiResponse<CommentResponse> createComment(Long requesterId, Long postId, CreateCommentRequest request) {
         log.info("댓글 생성 요청 - postId: {}, parentId: {}", postId, request.parentId());
 
-        Member author = memberRepository.findByMemberId(requesterId)
+        Member author = memberRepository.findById(requesterId)
                 .orElseThrow(() -> {
                     log.error("존재하지 않는 회원 - memberId: {}", requesterId);
                     return new BusinessException(MemberErrorCode.MEMBER_NOT_FOUND);
@@ -48,7 +47,7 @@ public class CommentService {
                     log.error("존재하지 않는 프로필 - memberId: {}", author.getId());
                     return new BusinessException(ProfileErrorCode.PROFILE_NOT_FOUND);
                 });
-        Post post = postRepository.findByPostId(postId)
+        Post post = postRepository.findById(postId)
                 .orElseThrow(() -> {
                     log.error("존재하지 않는 게시글 - postId: {}", postId);
                     return new BusinessException(PostErrorCode.POST_NOT_FOUND);
