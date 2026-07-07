@@ -11,6 +11,7 @@ import com.example.sprout.domain.member.repository.MemberRepository;
 import com.example.sprout.global.error.BusinessException;
 import com.example.sprout.global.error.GlobalErrorCode;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -21,6 +22,7 @@ import java.util.Optional;
 @Service
 @RequiredArgsConstructor
 @Transactional
+@Slf4j
 public class AuthService {
     private final List<OauthApiClient> oauthApiClientList;
     private final MemberRepository memberRepository;
@@ -45,6 +47,9 @@ public class AuthService {
 
         long expiresIn = jwtUtil.getAccessExpirationMs()/1000;
         LocalDateTime expiresAt = LocalDateTime.now().plusSeconds(expiresIn);
+
+        log.info("로그인 성공 - memberId: {}, provider: {}, isNewUser: {}",
+                member.getId(), request.provider(), isNewUser);
 
         return CreateMemberResponse.builder()
                 .memberId(member.getId())
