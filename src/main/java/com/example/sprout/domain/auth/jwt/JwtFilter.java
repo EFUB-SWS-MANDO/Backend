@@ -33,7 +33,7 @@ public class JwtFilter extends OncePerRequestFilter {
 
             if (claims == null) log.warn("유효하지 않은 토큰 - URI: {}", request.getRequestURI());
             else {
-                Long memberId = jwtUtil.getMemberId(token);
+                Long memberId = claims.get("memberId", Long.class);
 
                 CustomUserDetails userDetails = new CustomUserDetails(memberId);
                 Authentication authToken = new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
