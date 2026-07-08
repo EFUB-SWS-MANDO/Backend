@@ -5,6 +5,10 @@ spring:
     password: ${SPRING_DATASOURCE_PASSWORD}
     driver-class-name: org.postgresql.Driver
 
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
   jpa:
     hibernate:
       ddl-auto: create-drop
@@ -16,5 +20,9 @@ spring:
 
 jwt:
   secret: ${JWT_SECRET:sprout-ci-test-default-secret-32bytes-minimum-length}
-  access-expiration: 3600000
+  access-expiration: 30000 #3600000
   refresh-expiration: 1209600000
+
+  logging:
+    level:
+      com.example.sprout: debug
