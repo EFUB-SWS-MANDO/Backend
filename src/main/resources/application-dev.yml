@@ -20,7 +20,7 @@ spring:
 
 jwt:
   secret: ${JWT_SECRET:sprout-ci-test-default-secret-32bytes-minimum-length}
-  access-expiration: 30000 #3600000
+  access-expiration: 3600000
   refresh-expiration: 1209600000
 
   logging:
