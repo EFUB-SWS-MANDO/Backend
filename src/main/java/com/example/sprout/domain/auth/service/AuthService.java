@@ -65,6 +65,9 @@ public class AuthService {
         return oauthApiClientList.stream()
                 .filter(client -> client.supportedProvider() == provider)
                 .findFirst()
-                .orElseThrow(() -> new BusinessException(GlobalErrorCode.UNSUPPORTED_PROVIDER));
+                .orElseThrow(() -> {
+                    log.error("지원하지 않는 oauthProvider 요청 - provider: {}", provider);
+                    return new BusinessException(GlobalErrorCode.UNSUPPORTED_PROVIDER);
+                });
     }
 }

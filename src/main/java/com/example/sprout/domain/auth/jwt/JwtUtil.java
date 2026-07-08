@@ -4,6 +4,7 @@ import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
 import io.jsonwebtoken.security.SignatureException;
 import jakarta.servlet.http.HttpServletRequest;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -12,6 +13,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.Date;
 
 @Component
+@Slf4j
 public class JwtUtil {
 
     private final SecretKey key;
@@ -49,23 +51,26 @@ public class JwtUtil {
     public Long getAccessExpirationMs() {return accessExpirationMs;}
 
     //토큰 유효성 검증
-    public boolean validateToken(String token) {
+    public Claims validateToken(String token) {
         try {
-            Jwts.parser()
+            return Jwts.parser()
                     .verifyWith(key)
                     .build()
-                    .parseSignedClaims(token);
+                    .parseSignedClaims(token)
+                    .getPayload();
 
-            return true;
         } catch (ExpiredJwtException e) {
             //만료된 토큰
-            return false;
+            log.debug("만료된 토큰");
+            return null;
         } catch (MalformedJwtException | SignatureException | UnsupportedJwtException e) {
             //형식이 잘못된 경우/서명이 다른 경우/미지원 토큰
-            return false;
+            log.debug("유효하지 않은 토큰 (형식 오류/서명 불일치/미지원)");
+            return null;
         } catch (IllegalArgumentException e) {
             //토큰이 비거나 null인 경우
-            return false;
+            log.debug("토큰이 비어있거나 null");
+            return null;
         }
     }
 
