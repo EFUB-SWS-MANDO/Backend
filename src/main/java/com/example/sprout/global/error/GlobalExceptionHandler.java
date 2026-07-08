@@ -23,6 +23,8 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(BusinessException.class)
     public ResponseEntity<ApiResponse<Void>> handleBusinessException(BusinessException exception) {
+        log.error("BusinessException 발생 - errorCode: {}, message: {}",
+                exception.getErrorCode(), exception.getMessage());
         return ResponseEntity
                 .status(exception.getErrorCode().getStatus())
                 .body(ApiResponse.fail(exception.getErrorCode().getMessage()));
@@ -30,11 +32,13 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ApiResponse<Void>> handleValidation(MethodArgumentNotValidException exception) {
-
         FieldError fieldError = exception.getBindingResult().getFieldError();
         String message = fieldError != null
                 ? fieldError.getDefaultMessage()
                 : "잘못된 요청입니다.";
+
+        log.error("Validation 실패 - field: {}, reason: {}",
+                fieldError != null ? fieldError.getField() : "unknown", message);
 
         return ResponseEntity
                 .status(HttpStatus.BAD_REQUEST)
