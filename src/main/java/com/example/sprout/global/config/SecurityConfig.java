@@ -33,7 +33,9 @@ public class SecurityConfig {
 
         //경로별 권한(인가)관리: 임시로 전체 permit
         http.authorizeHttpRequests((auth) -> auth
-                .requestMatchers("/api/auth/sign-in", "/", "/api/interviews/{interviewSessionId}/stream").permitAll()
+                .requestMatchers("/api/auth/sign-in",
+                        "/", "/api/interviews/{interviewSessionId}/stream",
+                        "/api/auth/refresh", "/api/test/token").permitAll()
                 .anyRequest().authenticated());
 
         //필터 등록
