@@ -1,11 +1,11 @@
 package com.example.sprout.domain.comment.service;
 
 import com.example.sprout.domain.comment.dto.request.CreateCommentRequest;
+import com.example.sprout.domain.comment.dto.request.UpdateCommentRequest;
 import com.example.sprout.domain.comment.dto.response.CommentResponse;
 import com.example.sprout.domain.comment.entity.Comment;
 import com.example.sprout.domain.comment.exception.CommentErrorCode;
 import com.example.sprout.domain.comment.repository.CommentRepository;
-import com.example.sprout.domain.follow.repository.FollowRepository;
 import com.example.sprout.domain.member.entity.Member;
 import com.example.sprout.domain.member.exception.MemberErrorCode;
 import com.example.sprout.domain.member.repository.MemberRepository;
@@ -15,7 +15,6 @@ import com.example.sprout.domain.post.repository.PostRepository;
 import com.example.sprout.domain.profile.entity.Profile;
 import com.example.sprout.domain.profile.exception.ProfileErrorCode;
 import com.example.sprout.domain.profile.repository.ProfileRepository;
-import com.example.sprout.global.common.response.ApiResponse;
 import com.example.sprout.global.error.BusinessException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -53,6 +52,26 @@ public class CommentService {
         return CommentResponse.of(newComment, authorProfile);
     }
 
+    // 댓글 수정
+    @Transactional
+    public CommentResponse updateComment(Long requesterId, Long commentId, UpdateCommentRequest request) {
+        // 멤버 조회
+        Member requester = getMember(requesterId);
+        // 댓글 조회
+        Comment comment = getComment(commentId);
+
+        // requester == comment author랑 일치 여부 확인
+        validateAuthor(requester, comment);
+
+        // 댓글 수정
+        comment.updateComment(request.content());
+
+        // 작성자 프로필 조회
+        Profile authorProfile = getProfile(requester);
+
+        return CommentResponse.of(comment, authorProfile);
+    }
+
     // Helper 함수
 
     // Member 조회
@@ -82,6 +101,15 @@ public class CommentService {
                 });
     }
 
+    // Comment 조회
+    private Comment getComment(Long commentId) {
+        return commentRepository.findById(commentId)
+                .orElseThrow(() -> {
+                    log.error("존재하지 않는 댓글 - commentId: {}", commentId);
+                    return new BusinessException(CommentErrorCode.COMMENT_NOT_FOUND);
+                });
+    }
+
     // parent 댓글 확정 (null / parentId)
     private Comment resolveParent(Long parentId, Long postId) {
         if (parentId == null) {
@@ -103,6 +131,14 @@ public class CommentService {
         if (!parent.getPost().getId().equals(postId)) {
             log.error("parent가 해당 게시글에 속하지 않습니다. - parentPostId: {}, postId: {}", parent.getPost().getId(), postId);
             throw new BusinessException(CommentErrorCode.PARENT_NOT_IN_POST);
+        }
+    }
+
+    // 댓글 작성자/요청자 일치 확인
+    private void validateAuthor(Member member, Comment comment) {
+        if (!comment.isAuthor(member)) {
+            log.error("댓글 작성자가 아닙니다. - memberId, authorId: {}, {}", member.getId(), comment.getAuthor().getId());
+            throw new BusinessException(CommentErrorCode.COMMENT_ACCESS_DENIED);
         }
     }
 }
