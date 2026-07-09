@@ -5,7 +5,7 @@ import lombok.Builder;
 import java.time.LocalDateTime;
 
 @Builder
-public record CreateMemberResponse (
+public record SignInResponse(
     Long memberId,
     String accessToken,
     String refreshToken,
