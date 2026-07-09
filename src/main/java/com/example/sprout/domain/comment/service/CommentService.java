@@ -53,6 +53,21 @@ public class CommentService {
         return CommentResponse.of(newComment, authorProfile);
     }
 
+    // 댓글 삭제
+
+    @Transactional
+    public void deleteComment(Long requesterId, Long commentId) {
+        // 멤버 조회
+        Member requester = getMember(requesterId);
+        // 댓글 조회
+        Comment comment = getComment(commentId);
+        // 작성자/요청자 일치 확인
+        validateAuthor(requester, comment);
+
+        // 댓글 삭제
+        commentRepository.delete(comment);
+    }
+
     // Helper 함수
 
     // Member 조회
@@ -82,6 +97,15 @@ public class CommentService {
                 });
     }
 
+    // Comment 조회
+    private Comment getComment(Long commentId) {
+        return commentRepository.findById(commentId)
+                .orElseThrow(() -> {
+                    log.error("존재하지 않는 댓글 - commentId: {}", commentId);
+                    return new BusinessException(CommentErrorCode.COMMENT_NOT_FOUND);
+                });
+    }
+
     // parent 댓글 확정 (null / parentId)
     private Comment resolveParent(Long parentId, Long postId) {
         if (parentId == null) {
@@ -103,6 +127,14 @@ public class CommentService {
         if (!parent.getPost().getId().equals(postId)) {
             log.error("parent가 해당 게시글에 속하지 않습니다. - parentPostId: {}, postId: {}", parent.getPost().getId(), postId);
             throw new BusinessException(CommentErrorCode.PARENT_NOT_IN_POST);
+        }
+    }
+
+    // 댓글 작성자/요청자 일치 확인
+    private void validateAuthor(Member member, Comment comment) {
+        if (!comment.isAuthor(member)) {
+            log.error("댓글 작성자가 아닙니다. - memberId, authorId: {}, {}", member.getId(), comment.getAuthor().getId());
+            throw new BusinessException(CommentErrorCode.COMMENT_ACCESS_DENIED);
         }
     }
 }
