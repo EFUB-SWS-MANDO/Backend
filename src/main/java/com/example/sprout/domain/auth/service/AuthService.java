@@ -72,6 +72,11 @@ public class AuthService {
                 .build();
     }
 
+    public void signOut(Long memberId) {
+        redisTemplate.delete("refresh:"+memberId);
+        log.info("로그아웃 성공 - memberId: {}", memberId);
+    }
+
     public ReissueTokenResponse reissueToken(ReissueTokenRequest request) {
         String refreshToken = request.refreshToken();
         Claims claims = jwtUtil.validateToken(refreshToken);
