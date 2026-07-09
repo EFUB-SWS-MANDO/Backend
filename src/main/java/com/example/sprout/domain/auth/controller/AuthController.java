@@ -1,9 +1,10 @@
 package com.example.sprout.domain.auth.controller;
 
-import com.example.sprout.domain.auth.dto.request.CreateMemberRequest;
-import com.example.sprout.domain.auth.dto.response.CreateMemberResponse;
+import com.example.sprout.domain.auth.dto.request.SignInRequest;
+import com.example.sprout.domain.auth.dto.response.SignInResponse;
 import com.example.sprout.domain.auth.service.AuthService;
 import com.example.sprout.global.common.response.ApiResponse;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -21,10 +22,10 @@ public class AuthController {
     private final AuthService authService;
 
     @PostMapping("/sign-in")
-    public ResponseEntity<ApiResponse<CreateMemberResponse>> signIn(@RequestBody CreateMemberRequest request) {
+    public ResponseEntity<ApiResponse<SignInResponse>> signIn(@Valid @RequestBody SignInRequest request) {
 
         log.info("로그인 요청 - provider: {}", request.provider());
-        CreateMemberResponse response = authService.signIn(request);
+        SignInResponse response = authService.signIn(request);
 
         return ResponseEntity.ok(ApiResponse.success("로그인 성공", response));
     }

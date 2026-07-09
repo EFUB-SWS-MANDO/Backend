@@ -2,8 +2,8 @@ package com.example.sprout.domain.auth.service;
 
 import com.example.sprout.domain.auth.client.OauthApiClient;
 import com.example.sprout.domain.auth.client.OauthUserInfo;
-import com.example.sprout.domain.auth.dto.request.CreateMemberRequest;
-import com.example.sprout.domain.auth.dto.response.CreateMemberResponse;
+import com.example.sprout.domain.auth.dto.request.SignInRequest;
+import com.example.sprout.domain.auth.dto.response.SignInResponse;
 import com.example.sprout.domain.auth.jwt.JwtUtil;
 import com.example.sprout.domain.member.entity.Member;
 import com.example.sprout.domain.member.enums.OauthProvider;
@@ -28,7 +28,7 @@ public class AuthService {
     private final MemberRepository memberRepository;
     private final JwtUtil jwtUtil;
 
-    public CreateMemberResponse signIn(CreateMemberRequest request) {
+    public SignInResponse signIn(SignInRequest request) {
         OauthApiClient client = findClient(request.provider());
         OauthUserInfo userInfo = client.getUserInfo(request.oauthAccessToken());
 
@@ -51,7 +51,7 @@ public class AuthService {
         log.info("로그인 성공 - memberId: {}, provider: {}, isNewUser: {}",
                 member.getId(), request.provider(), isNewUser);
 
-        return CreateMemberResponse.builder()
+        return SignInResponse.builder()
                 .memberId(member.getId())
                 .accessToken(accessToken)
                 .refreshToken(refreshToken)
