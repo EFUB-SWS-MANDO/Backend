@@ -13,6 +13,7 @@ import com.example.sprout.domain.member.enums.OauthProvider;
 import com.example.sprout.domain.member.repository.MemberRepository;
 import com.example.sprout.global.error.BusinessException;
 import io.jsonwebtoken.Claims;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -72,8 +73,22 @@ public class AuthService {
                 .build();
     }
 
-    public void signOut(Long memberId) {
+    public void signOut(Long memberId, HttpServletRequest request) {
+        String accessToken = JwtUtil.resolveToken(request);
+        //refreshToken 삭제
         redisTemplate.delete("refresh:"+memberId);
+
+        //accessToken 블랙리스트 등록
+        Claims claims = jwtUtil.validateToken(accessToken);
+        if (claims != null) {
+            long remainingMs = jwtUtil.getRemainingExpiration(claims);
+            redisTemplate.opsForValue().set(
+                    "blacklist:"+accessToken,
+                    "logout",
+                    Duration.ofMillis(remainingMs)
+            );
+        }
+
         log.info("로그아웃 성공 - memberId: {}", memberId);
     }
 

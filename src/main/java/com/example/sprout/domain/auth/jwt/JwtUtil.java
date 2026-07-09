@@ -48,8 +48,8 @@ public class JwtUtil {
                 .compact();
     }
 
-    public Long getAccessExpirationMs() {return accessExpirationMs;}
-    public Long getRefreshExpirationMs() {return refreshExpirationMs;}
+    public long getAccessExpirationMs() {return accessExpirationMs;}
+    public long getRefreshExpirationMs() {return refreshExpirationMs;}
 
     //토큰 유효성 검증
     public Claims validateToken(String token) {
@@ -84,6 +84,13 @@ public class JwtUtil {
                 .getPayload();
 
         return claims.get("memberId", Long.class);
+    }
+
+    public long getRemainingExpiration(Claims claims) {
+        Date expiration = claims.getExpiration();
+        long remainingMs = expiration.getTime()-System.currentTimeMillis();
+
+        return Math.max(remainingMs,0);
     }
 
     //HTTP 요청 헤더에서 토큰 추출

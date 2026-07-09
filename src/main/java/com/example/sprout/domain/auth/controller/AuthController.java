@@ -7,6 +7,7 @@ import com.example.sprout.domain.auth.dto.response.ReissueTokenResponse;
 import com.example.sprout.domain.auth.security.AuthMember;
 import com.example.sprout.domain.auth.service.AuthService;
 import com.example.sprout.global.common.response.ApiResponse;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -34,9 +35,9 @@ public class AuthController {
     }
 
     @PostMapping("/sign-out")
-    public ResponseEntity<ApiResponse<Void>> signOut(@AuthMember Long memberId) {
+    public ResponseEntity<ApiResponse<Void>> signOut(@AuthMember Long memberId, HttpServletRequest request) {
         log.info("로그아웃 요청 - memberId: {}", memberId);
-        authService.signOut(memberId);
+        authService.signOut(memberId, request);
 
         return ResponseEntity.ok(ApiResponse.success("로그아웃 성공", null));
     }
