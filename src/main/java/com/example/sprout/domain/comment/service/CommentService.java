@@ -34,34 +34,75 @@ public class CommentService {
 
     // 댓글 생성
     @Transactional
-    public ApiResponse<CommentResponse> createComment(Long requesterId, Long postId, CreateCommentRequest request) {
+    public CommentResponse createComment(Long requesterId, Long postId, CreateCommentRequest request) {
         log.info("댓글 생성 요청 - postId: {}, parentId: {}", postId, request.parentId());
 
-        Member author = memberRepository.findById(requesterId)
+        Member author = getMember(requesterId);
+
+        Profile authorProfile = getProfile(author);
+
+        Post post = getPost(postId);
+
+        Comment parent = resolveParent(request.parentId(), postId);
+
+        Comment newComment = request.toEntity(author, post, parent);
+        commentRepository.save(newComment);
+
+        log.info("댓글 생성 성공");
+
+        return CommentResponse.of(newComment, authorProfile);
+    }
+
+    // Helper 함수
+
+    // Member 조회
+    private Member getMember(Long memberId) {
+        return memberRepository.findById(memberId)
                 .orElseThrow(() -> {
-                    log.error("존재하지 않는 회원 - memberId: {}", requesterId);
+                    log.error("존재하지 않는 회원 - memberId: {}", memberId);
                     return new BusinessException(MemberErrorCode.MEMBER_NOT_FOUND);
                 });
-        Profile authorProfile = profileRepository.findByMember(author)
-                .orElseThrow(() -> {
-                    log.error("존재하지 않는 프로필 - memberId: {}", author.getId());
-                    return new BusinessException(ProfileErrorCode.PROFILE_NOT_FOUND);
-                });
-        Post post = postRepository.findById(postId)
+    }
+
+    // Post 조회
+    private Post getPost(Long postId) {
+        return postRepository.findById(postId)
                 .orElseThrow(() -> {
                     log.error("존재하지 않는 게시글 - postId: {}", postId);
                     return new BusinessException(PostErrorCode.POST_NOT_FOUND);
                 });
-        Comment parent = request.parentId() != null
-                ? commentRepository.findById(request.parentId())
-                .orElseThrow(() -> {
-                    log.error("존재하지 않는 댓글 - commentId: {}", request.parentId());
-                    return new BusinessException(CommentErrorCode.COMMENT_NOT_FOUND);
-                }) : null;
-        Comment newComment = request.toEntity(author, post, parent);
-        commentRepository.save(newComment);
-        log.info("댓글 생성 성공");
+    }
 
-        return ApiResponse.success("댓글 생성 성공", CommentResponse.of(newComment, authorProfile));
+    // Profile 조회
+    private Profile getProfile(Member member) {
+        return profileRepository.findByMember(member)
+                .orElseThrow(() -> {
+                    log.error("존재하지 않는 프로필 - memberId: {}", member.getId());
+                    return new BusinessException(ProfileErrorCode.PROFILE_NOT_FOUND);
+                });
+    }
+
+    // parent 댓글 확정 (null / parentId)
+    private Comment resolveParent(Long parentId, Long postId) {
+        if (parentId == null) {
+            return null;
+        }
+
+        Comment parent = commentRepository.findById(parentId)
+                .orElseThrow(() -> {
+                    log.error("존재하지 않는 댓글 - commentId: {}", parentId);
+                    return new BusinessException(CommentErrorCode.COMMENT_NOT_FOUND);
+                });
+        // parent가 post에 속하는지 확인
+        validateParentBelongsToPost(parent, postId);
+        return parent;
+    }
+
+    // parent 댓글이 게시글에 포함되는지 확인
+    private void validateParentBelongsToPost(Comment parent, Long postId) {
+        if (!parent.getPost().getId().equals(postId)) {
+            log.error("parent가 해당 게시글에 속하지 않습니다. - parentPostId: {}, postId: {}", parent.getPost().getId(), postId);
+            throw new BusinessException(CommentErrorCode.PARENT_NOT_IN_POST);
+        }
     }
 }
