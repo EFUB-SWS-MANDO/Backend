@@ -7,6 +7,7 @@ import com.example.sprout.global.common.response.ApiResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -27,7 +28,7 @@ public class CommentController {
         // TODO: 나중에 memberId 추출해서 사용하는 걸로 변경
         Long requesterId = 1L;
 
-        ApiResponse<CommentResponse> response = commentService.createComment(requesterId, postId, request);
-        return ResponseEntity.ok(response);
+        CommentResponse response = commentService.createComment(requesterId, postId, request);
+        return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success("댓글 생성 성공", response));
     }
 }
