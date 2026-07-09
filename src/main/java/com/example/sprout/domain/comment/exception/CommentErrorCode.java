@@ -10,7 +10,7 @@ import org.springframework.http.HttpStatus;
 public enum CommentErrorCode implements ErrorCode {
 
     COMMENT_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 댓글입니다."),
-    COMMENT_ACCESS_DENINED(HttpStatus.FORBIDDEN, "권한이 없습니다."),
+    COMMENT_ACCESS_DENIED(HttpStatus.FORBIDDEN, "권한이 없습니다."),
     PARENT_NOT_IN_POST(HttpStatus.BAD_REQUEST, "부모 댓글이 해당 게시글에 존재하지 않습니다.");
 
     private final HttpStatus status;
