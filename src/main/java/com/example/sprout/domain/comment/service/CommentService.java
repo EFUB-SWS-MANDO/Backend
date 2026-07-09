@@ -2,10 +2,10 @@ package com.example.sprout.domain.comment.service;
 
 import com.example.sprout.domain.comment.dto.request.CreateCommentRequest;
 import com.example.sprout.domain.comment.dto.response.CommentResponse;
+import com.example.sprout.domain.comment.dto.response.GetCommentListResponse;
 import com.example.sprout.domain.comment.entity.Comment;
 import com.example.sprout.domain.comment.exception.CommentErrorCode;
 import com.example.sprout.domain.comment.repository.CommentRepository;
-import com.example.sprout.domain.follow.repository.FollowRepository;
 import com.example.sprout.domain.member.entity.Member;
 import com.example.sprout.domain.member.exception.MemberErrorCode;
 import com.example.sprout.domain.member.repository.MemberRepository;
@@ -15,12 +15,19 @@ import com.example.sprout.domain.post.repository.PostRepository;
 import com.example.sprout.domain.profile.entity.Profile;
 import com.example.sprout.domain.profile.exception.ProfileErrorCode;
 import com.example.sprout.domain.profile.repository.ProfileRepository;
-import com.example.sprout.global.common.response.ApiResponse;
 import com.example.sprout.global.error.BusinessException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import org.springframework.data.domain.Pageable;
+import java.util.List;
+
+import static com.example.sprout.global.common.util.CursorPageUtils.hasNextPage;
+import static com.example.sprout.global.common.util.CursorPageUtils.trimToPageSize;
+import static com.example.sprout.global.common.util.CursorPageUtils.resolveNextIdAfter;
 
 @Slf4j
 @Service
@@ -51,6 +58,32 @@ public class CommentService {
         log.info("댓글 생성 성공");
 
         return CommentResponse.of(newComment, authorProfile);
+    }
+
+    // 댓글 목록 조회
+    @Transactional(readOnly = true)
+    public GetCommentListResponse getCommentList(Long requesterId, Long postId, Long idAfter, int limit) {
+
+        // 멤버 조회
+        Member member = getMember(requesterId);
+        // 게시글 조회
+        Post post = getPost(postId);
+
+        // limit + 1개 요청 -> 그만큼 반환되면 다음 페이지가 존재한다고 판단
+        Pageable pageable = PageRequest.of(0, limit + 1);
+        List<Comment> commentList = commentRepository.findCommentsByPostId(postId, idAfter, pageable);
+
+        boolean hasNext = hasNextPage(commentList, limit);
+
+        // 여분으로 받아온 1개는 응답에 포함 x
+        List<Comment> pageCommentList = trimToPageSize(commentList, limit, hasNext);
+
+        List<CommentResponse> commentResponseList = toCommentResponseList(pageCommentList);
+        Long nextIdAfter = resolveNextIdAfter(pageCommentList, hasNext, Comment::getId);
+        Long totalElements = commentRepository.countByPostId(postId);
+        log.info("댓글 목록 조회 완료 - 반환 개수: {}, hasNext: {}", commentResponseList.size(), hasNext);
+
+        return GetCommentListResponse.of(commentResponseList, nextIdAfter, hasNext, totalElements);
     }
 
     // Helper 함수
@@ -87,7 +120,6 @@ public class CommentService {
         if (parentId == null) {
             return null;
         }
-
         Comment parent = commentRepository.findById(parentId)
                 .orElseThrow(() -> {
                     log.error("존재하지 않는 댓글 - commentId: {}", parentId);
@@ -97,6 +129,20 @@ public class CommentService {
         validateParentBelongsToPost(parent, postId);
         return parent;
     }
+
+    // comment -> CommentResponseList
+    private List<CommentResponse> toCommentResponseList(List<Comment> commentList) {
+        return commentList.stream()
+                .map(this::toCommentResponse)
+                .toList();
+    }
+
+    // comment -> CommentResponse 변환
+    private CommentResponse toCommentResponse(Comment comment) {
+        Profile authorProfile = getProfile(comment.getAuthor());
+        return CommentResponse.of(comment, authorProfile);
+    }
+
 
     // parent 댓글이 게시글에 포함되는지 확인
     private void validateParentBelongsToPost(Comment parent, Long postId) {
