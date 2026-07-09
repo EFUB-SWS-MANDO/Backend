@@ -45,4 +45,14 @@ public class Comment extends BaseTimeEntity {
         this.post = post;
         this.parent = parent;
     }
+
+    // 댓글 작성자/요청자 일치 확인
+    public boolean isAuthor(Member member) {
+        return this.author.getId().equals(member.getId());
+    }
+
+    // 댓글 수정
+    public void updateComment(String content) {
+        this.content = content;
+    }
 }
