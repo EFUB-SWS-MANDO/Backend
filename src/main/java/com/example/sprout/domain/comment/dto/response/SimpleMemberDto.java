@@ -14,4 +14,9 @@ public record SimpleMemberDto(
                 authorProfile.getProfileImage()
         );
     }
+
+    // 탈퇴한 사용자에 대한 정보
+    public static SimpleMemberDto withdrawn() {
+        return new SimpleMemberDto(null, "알 수 없음", null);
+    }
 }

@@ -12,14 +12,21 @@ public record CommentResponse(
         SimpleMemberDto author,
         Long parentId,
         String content,
+        boolean deleted,
         LocalDateTime updatedAt
 ) {
     public static CommentResponse of(Comment comment, Profile authorProfile) {
+        String content = comment.isDeleted() ? "삭제된 댓글입니다" : comment.getContent();
+        SimpleMemberDto author = (authorProfile != null)
+                ? SimpleMemberDto.from(authorProfile)
+                : SimpleMemberDto.withdrawn();
+
         return new CommentResponse(
                 comment.getId(),
-                SimpleMemberDto.from(authorProfile),
+                author,
                 comment.getParent() != null ? comment.getParent().getId() : null,
-                comment.getContent(),
+                content,
+                comment.isDeleted(),
                 comment.getUpdatedAt()
         );
     }
