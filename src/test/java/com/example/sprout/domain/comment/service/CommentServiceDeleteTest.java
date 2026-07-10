@@ -94,7 +94,7 @@ class CommentServiceDeleteTest {
 
             commentService.deleteComment(requesterId, commentId);
 
-            verify(commentRepository).delete(comment);
+            assertThat(comment.isDeleted()).isTrue();   // soft delete (상태 변화만 확인)
         }
     }
 
