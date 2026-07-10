@@ -5,6 +5,7 @@ import com.example.sprout.domain.follow.entity.Follow;
 import com.example.sprout.domain.follow.exception.FollowErrorCode;
 import com.example.sprout.domain.follow.repository.FollowRepository;
 import com.example.sprout.domain.member.entity.Member;
+import com.example.sprout.domain.member.exception.MemberErrorCode;
 import com.example.sprout.domain.member.repository.MemberRepository;
 import com.example.sprout.global.error.BusinessException;
 import com.example.sprout.global.error.GlobalErrorCode;
@@ -27,10 +28,10 @@ public class FollowService {
     public FollowCreateResponse createFollow(Long requesterId, Long followeeId) {
 
         validateNotSelfFollow(requesterId, followeeId);
-        validateDuplicateFollow(requesterId, followeeId);
+        validateMembersExist(requesterId, followeeId);
 
-        Member requester = getMember(requesterId);
-        Member followee = getMember(followeeId);
+        Member requester = memberRepository.getReferenceById(requesterId);
+        Member followee = memberRepository.getReferenceById(followeeId);
 
         Follow follow = Follow.builder().follower(requester).followee(followee).build();
         Follow savedFollow = saveFollow(follow);
@@ -44,9 +45,7 @@ public class FollowService {
     @Transactional
     public void deleteFollow(Long requesterId, Long followeeId) {
 
-        Follow follow = getFollow(requesterId, followeeId);
-
-        followRepository.delete(follow);
+        removeFollow(requesterId, followeeId);
 
         log.info("Follow 취소 완료 - followerId={}, followeeId={}", requesterId, followeeId);
 
@@ -54,14 +53,8 @@ public class FollowService {
 
     // === Helper method ===
     private Member getMember(Long memberId) {
-        // TODO: Member 도메인 Not Found ErrorCode로 수정
         return memberRepository.findById(memberId)
-                .orElseThrow(() -> new BusinessException(GlobalErrorCode.RESOURCE_NOT_FOUND));
-    }
-
-    private Follow getFollow(Long followerId, Long followeeId) {
-        return followRepository.findByFollowerIdAndFolloweeId(followerId, followeeId)
-                .orElseThrow(() -> new BusinessException(FollowErrorCode.FOLLOW_NOT_FOUND));
+                .orElseThrow(() -> new BusinessException(MemberErrorCode.MEMBER_NOT_FOUND));
     }
 
     private void validateNotSelfFollow(Long requesterId, Long followeeId) {
@@ -70,9 +63,9 @@ public class FollowService {
         }
     }
 
-    private void validateDuplicateFollow(Long requesterId, Long followeeId) {
-        if (followRepository.existsByFollowerIdAndFolloweeId(requesterId, followeeId)) {
-            throw new BusinessException(FollowErrorCode.FOLLOW_ALREADY_EXISTS);
+    private void validateMembersExist(Long requesterId, Long followeeId) {
+        if (!memberRepository.existsById(requesterId) || !memberRepository.existsById(followeeId)) {
+            throw new BusinessException(MemberErrorCode.MEMBER_NOT_FOUND);
         }
     }
 
@@ -80,7 +73,16 @@ public class FollowService {
         try {
             return followRepository.save(follow);
         } catch (DataIntegrityViolationException e) {
+            // 이미 팔로우하는 관계가 있을 경우 에러
             throw new BusinessException(FollowErrorCode.FOLLOW_ALREADY_EXISTS);
+        }
+    }
+
+    private void removeFollow(Long requesterId, Long followeeId) {
+        int deletedCount = followRepository.deleteByFollowerIdAndFolloweeId(requesterId, followeeId);
+
+        if (deletedCount == 0) {
+            throw new BusinessException(FollowErrorCode.FOLLOW_NOT_FOUND);
         }
     }
 

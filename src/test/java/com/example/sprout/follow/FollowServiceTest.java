@@ -6,6 +6,7 @@ import com.example.sprout.domain.follow.exception.FollowErrorCode;
 import com.example.sprout.domain.follow.repository.FollowRepository;
 import com.example.sprout.domain.follow.service.FollowService;
 import com.example.sprout.domain.member.entity.Member;
+import com.example.sprout.domain.member.exception.MemberErrorCode;
 import com.example.sprout.domain.member.repository.MemberRepository;
 import com.example.sprout.global.error.BusinessException;
 import com.example.sprout.global.error.GlobalErrorCode;
@@ -16,6 +17,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.util.Optional;
@@ -60,9 +62,11 @@ public class FollowServiceTest {
     @DisplayName("팔로우 생성 성공")
     void createFollow_Success() {
         // given
-        given(memberRepository.findById(requesterId)).willReturn(Optional.of(requester));
-        given(memberRepository.findById(followeeId)).willReturn(Optional.of(followee));
-        given(followRepository.existsByFollowerIdAndFolloweeId(requesterId, followeeId)).willReturn(false);
+        given(memberRepository.existsById(requesterId)).willReturn(true);
+        given(memberRepository.existsById(followeeId)).willReturn(true);
+        given(memberRepository.getReferenceById(requesterId)).willReturn(requester);
+        given(memberRepository.getReferenceById(followeeId)).willReturn(followee);
+
         given(followRepository.save(any(Follow.class)))
                 .willAnswer(invocation -> invocation.getArgument(0));
 
@@ -73,27 +77,26 @@ public class FollowServiceTest {
         assertThat(response).isNotNull();
         assertThat(response.followerId()).isEqualTo(requesterId);
         assertThat(response.followeeId()).isEqualTo(followeeId);
+        verify(memberRepository).existsById(requesterId);
+        verify(memberRepository).existsById(followeeId);
+        verify(memberRepository).getReferenceById(requesterId);
+        verify(memberRepository).getReferenceById(followeeId);
         verify(followRepository).save(any(Follow.class));
-        verify(memberRepository).findById(requesterId);
-        verify(memberRepository).findById(followeeId);
-        verify(followRepository).existsByFollowerIdAndFolloweeId(requesterId, followeeId);
     }
 
     @Test
     @DisplayName("존재하지 않는 유저로 팔로우 시도 시 실패")
     void createFollow_NotFoundMember_Fail() {
         // given
-        given(followRepository.existsByFollowerIdAndFolloweeId(requesterId, followeeId)).willReturn(false);
-        given(memberRepository.findById(requesterId)).willReturn(Optional.of(requester));
-        given(memberRepository.findById(followeeId)).willReturn(Optional.empty());
+        given(memberRepository.existsById(requesterId)).willReturn(true);
+        given(memberRepository.existsById(followeeId)).willReturn(false);
 
         // when & then
         BusinessException exception = assertThrows(
                 BusinessException.class,
                 () -> followService.createFollow(requesterId, followeeId)
         );
-        // TODO: Member 도메인 Not Found ErrorCode로 수정
-        assertThat(exception.getErrorCode()).isEqualTo(GlobalErrorCode.RESOURCE_NOT_FOUND);
+        assertThat(exception.getErrorCode()).isEqualTo(MemberErrorCode.MEMBER_NOT_FOUND);
         verify(followRepository, never()).save(any(Follow.class));
     }
 
@@ -101,7 +104,13 @@ public class FollowServiceTest {
     @DisplayName("이미 팔로우하는 유저를 팔로우 시도 시 실패")
     void createFollow_AlreadyFollowedMember_Fail() {
         // given
-        given(followRepository.existsByFollowerIdAndFolloweeId(requesterId, followeeId)).willReturn(true);
+        given(memberRepository.existsById(requesterId)).willReturn(true);
+        given(memberRepository.existsById(followeeId)).willReturn(true);
+        given(memberRepository.getReferenceById(requesterId)).willReturn(requester);
+        given(memberRepository.getReferenceById(followeeId)).willReturn(followee);
+
+        given(followRepository.save(any(Follow.class)))
+                .willThrow(DataIntegrityViolationException.class);
 
         // when & then
         BusinessException exception = assertThrows(
@@ -109,7 +118,7 @@ public class FollowServiceTest {
                 () -> followService.createFollow(requesterId, followeeId)
         );
         assertThat(exception.getErrorCode()).isEqualTo(FollowErrorCode.FOLLOW_ALREADY_EXISTS);
-        verify(followRepository, never()).save(any(Follow.class));
+        verify(followRepository).save(any(Follow.class));
     }
 
     @Test
@@ -134,22 +143,22 @@ public class FollowServiceTest {
     void deleteFollow_Success() {
         // given
         Follow follow = Follow.builder().follower(requester).followee(followee).build();
-        given(followRepository.findByFollowerIdAndFolloweeId(requesterId, followeeId))
-                .willReturn(Optional.of(follow));
+        given(followRepository.deleteByFollowerIdAndFolloweeId(requesterId, followeeId))
+                .willReturn(1);
 
         // when
         followService.deleteFollow(requesterId, followeeId);
 
         // then
-        verify(followRepository).delete(follow);
+        verify(followRepository).deleteByFollowerIdAndFolloweeId(requesterId, followeeId);
     }
 
     @Test
     @DisplayName("팔로우하지 않는 유저를 팔로우 취소 시도 시 실패")
     void deleteFollow_NotFollowedMember_Fail() {
         // given
-        given(followRepository.findByFollowerIdAndFolloweeId(requesterId, followeeId))
-                .willReturn(Optional.empty());
+        given(followRepository.deleteByFollowerIdAndFolloweeId(requesterId, followeeId))
+                .willReturn(0);
 
         // when & then
         BusinessException exception = assertThrows(
@@ -157,7 +166,7 @@ public class FollowServiceTest {
                 () -> followService.deleteFollow(requesterId, followeeId)
         );
         assertThat(exception.getErrorCode()).isEqualTo(FollowErrorCode.FOLLOW_NOT_FOUND);
-        verify(followRepository, never()).delete(any(Follow.class));
+        verify(followRepository).deleteByFollowerIdAndFolloweeId(requesterId, followeeId);
     }
 
 }
