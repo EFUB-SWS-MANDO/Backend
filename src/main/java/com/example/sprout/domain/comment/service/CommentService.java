@@ -62,6 +62,7 @@ public class CommentService {
 
         // requester == comment author랑 일치 여부 확인
         validateAuthor(requester, comment);
+        validateNotDeleted(comment);
 
         // 댓글 수정
         comment.updateComment(request.content());
@@ -136,9 +137,18 @@ public class CommentService {
 
     // 댓글 작성자/요청자 일치 확인
     private void validateAuthor(Member member, Comment comment) {
-        if (!comment.isAuthor(member)) {
-            log.error("댓글 작성자가 아닙니다. - memberId, authorId: {}, {}", member.getId(), comment.getAuthor().getId());
+        if (comment.getAuthor() == null || !comment.isAuthor(member)) {
+            Long authorId = (comment.getAuthor() != null) ? comment.getAuthor().getId() : null;
+            log.error("댓글 작성자가 아닙니다. - memberId, authorId: {}, {}", member.getId(), authorId);
             throw new BusinessException(CommentErrorCode.COMMENT_ACCESS_DENIED);
+        }
+    }
+
+    // 삭제된 댓글인지 확인
+    private void validateNotDeleted(Comment comment) {
+        if (comment.isDeleted()) {
+            log.error("이미 삭제된 댓글은 수정할 수 없습니다 - commentId: {}", comment.getId());
+            throw new BusinessException(CommentErrorCode.ALREADY_DELETED_COMMENT);
         }
     }
 }

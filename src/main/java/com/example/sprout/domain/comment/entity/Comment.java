@@ -38,6 +38,9 @@ public class Comment extends BaseTimeEntity {
     @JoinColumn(name = "parent_id")
     private Comment parent;
 
+    @Column(nullable = false)
+    private boolean deleted = false;
+
     @Builder
     public Comment(String content, Member author, Post post, Comment parent) {
         this.content = content;
@@ -54,5 +57,10 @@ public class Comment extends BaseTimeEntity {
     // 댓글 수정
     public void updateComment(String content) {
         this.content = content;
+    }
+
+    // 댓글 삭제
+    public void delete() {
+        this.deleted = true;
     }
 }
