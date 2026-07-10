@@ -19,5 +19,8 @@ public interface CommentRepository extends JpaRepository<Comment, Long> {
             Pageable pageable
     );
 
+    @Query("SELECT c.parent.id FROM Comment c WHERE c.parent.id IN :parentIds")
+    List<Long> findParentIdWithChildren(@Param("parentIds") List<Long> parentIds);
+
     Long countByPostId(Long postId);
 }
