@@ -15,7 +15,7 @@ import java.util.List;
 @Entity
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-@Table(name = "comments")
+@Table(name = "comments", indexes = @Index(name = "idx_comment_post_id_id", columnList = "post_id, id"))
 public class Comment extends BaseTimeEntity {
 
     @Id
@@ -27,7 +27,11 @@ public class Comment extends BaseTimeEntity {
     private String content;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "author_id", updatable = false, nullable = false)
+    @JoinColumn(name = "author_id", updatable = false,
+                foreignKey = @ForeignKey(
+                        name = "fk_comment_author",
+                        foreignKeyDefinition = "FOREIGN KEY (author_id) REFERENCES members(id) ON DELETE SET NULL"
+                ))
     private Member author;
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -38,11 +42,15 @@ public class Comment extends BaseTimeEntity {
     @JoinColumn(name = "parent_id")
     private Comment parent;
 
+    @Column(nullable = false)
+    private boolean deleted = false;
+
     @Builder
-    public Comment(String content, Member author, Post post, Comment parent) {
+    public Comment(String content, Member author, Post post, Comment parent, boolean deleted) {
         this.content = content;
         this.author = author;
         this.post = post;
         this.parent = parent;
+        this.deleted = deleted;
     }
 }
