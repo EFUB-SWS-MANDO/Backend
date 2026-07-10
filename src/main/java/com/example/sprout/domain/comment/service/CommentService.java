@@ -22,6 +22,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
+
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -51,6 +53,20 @@ public class CommentService {
         log.info("댓글 생성 성공");
 
         return CommentResponse.of(newComment, authorProfile);
+    }
+
+    @Transactional
+    public void deleteByPost(Post post) {
+        List<Comment> commentList = commentRepository.findAllByPost(post);
+        //TODO: 게시글 삭제 시 해당 글의 댓글 전부 hard delete/soft delete? -> hard delete일 경우 대댓글 삭제 순서 작업 필요
+        commentRepository.deleteAll(commentList);
+    }
+
+    @Transactional
+    public void deleteCommentAuthor(Member member) {
+        List<Comment> commentList = commentRepository.findAllByAuthor(member);
+        //TODO: 확인 필요
+        for (Comment comment : commentList) comment.deleteAuthor();
     }
 
     // Helper 함수

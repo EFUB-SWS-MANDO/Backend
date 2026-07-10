@@ -20,7 +20,9 @@ public class MemberController {
     @DeleteMapping
 //    public ResponseEntity<ApiResponse<Void>> deleteMember(@AuthMember Long memberId) { :@AuthMember 사용 후 활성화
     public ResponseEntity<ApiResponse<Void>> deleteMember() {
+        //TODO: 추후 @AuthMember 사용으로 수정 예정
         Long memberId = 1L; //@AuthMember 사용 전 임시 테스트용
+
         log.info("회원탈퇴 요청 - memberId: {}", memberId);
 
         memberService.deleteMember(memberId);

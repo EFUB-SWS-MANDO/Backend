@@ -27,7 +27,7 @@ public class Comment extends BaseTimeEntity {
     private String content;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "author_id", updatable = false, nullable = false)
+    @JoinColumn(name = "author_id")
     private Member author;
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -44,5 +44,9 @@ public class Comment extends BaseTimeEntity {
         this.author = author;
         this.post = post;
         this.parent = parent;
+    }
+
+    public void deleteAuthor() {
+        this.author = null;
     }
 }
