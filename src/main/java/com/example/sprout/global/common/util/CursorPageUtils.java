@@ -1,6 +1,6 @@
 package com.example.sprout.global.common.util;
 
-import org.springframework.cglib.core.internal.Function;
+import java.util.function.Function;
 
 import java.util.List;
 
