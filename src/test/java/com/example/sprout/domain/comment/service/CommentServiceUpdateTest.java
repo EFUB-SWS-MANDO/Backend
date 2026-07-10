@@ -1,11 +1,10 @@
-package com.example.sprout.Comment;
+package com.example.sprout.domain.comment.service;
 
 import com.example.sprout.domain.comment.dto.request.UpdateCommentRequest;
 import com.example.sprout.domain.comment.dto.response.CommentResponse;
 import com.example.sprout.domain.comment.entity.Comment;
 import com.example.sprout.domain.comment.exception.CommentErrorCode;
 import com.example.sprout.domain.comment.repository.CommentRepository;
-import com.example.sprout.domain.comment.service.CommentService;
 import com.example.sprout.domain.member.entity.Member;
 import com.example.sprout.domain.member.enums.OauthProvider;
 import com.example.sprout.domain.member.exception.MemberErrorCode;
