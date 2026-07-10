@@ -1,6 +1,7 @@
 package com.example.sprout.domain.comment.service;
 
 import com.example.sprout.domain.comment.dto.request.CreateCommentRequest;
+import com.example.sprout.domain.comment.dto.response.CommentListItemResponse;
 import com.example.sprout.domain.comment.dto.response.CommentResponse;
 import com.example.sprout.domain.comment.dto.response.GetCommentListResponse;
 import com.example.sprout.domain.comment.entity.Comment;
@@ -23,7 +24,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import org.springframework.data.domain.Pageable;
-import java.util.List;
+
+import java.util.*;
+import java.util.stream.Collectors;
 
 import static com.example.sprout.global.common.util.CursorPageUtils.hasNextPage;
 import static com.example.sprout.global.common.util.CursorPageUtils.trimToPageSize;
@@ -73,12 +76,19 @@ public class CommentService {
         Pageable pageable = PageRequest.of(0, limit + 1);
         List<Comment> commentList = commentRepository.findCommentsByPostId(postId, idAfter, pageable);
 
+        List<Long> commentIds = commentList.stream().map(Comment::getId).toList();
+        Set<Long> parentIdWithChildren = commentIds.isEmpty()
+                ? Set.of()
+                : new HashSet<>(commentRepository.findParentIdWithChildren(commentIds));
+
         boolean hasNext = hasNextPage(commentList, limit);
 
         // 여분으로 받아온 1개는 응답에 포함 x
         List<Comment> pageCommentList = trimToPageSize(commentList, limit, hasNext);
 
-        List<CommentResponse> commentResponseList = toCommentResponseList(pageCommentList);
+        Map<Long, Profile> profileMap = buildAuthorProfileMap(pageCommentList);
+
+        List<CommentListItemResponse> commentResponseList = toCommentResponseList(pageCommentList, parentIdWithChildren, profileMap);
         Long nextIdAfter = resolveNextIdAfter(pageCommentList, hasNext, Comment::getId);
         Long totalElements = commentRepository.countByPostId(postId);
         log.info("댓글 목록 조회 완료 - 반환 개수: {}, hasNext: {}", commentResponseList.size(), hasNext);
@@ -127,22 +137,45 @@ public class CommentService {
                 });
         // parent가 post에 속하는지 확인
         validateParentBelongsToPost(parent, postId);
+
+        // 삭제된 댓글에는 대댓글 불가
+        if (parent.isDeleted()) {
+            throw new BusinessException(CommentErrorCode.CANNOT_REPLY_TO_DELETED_COMMENT);
+        }
+
         return parent;
     }
 
     // comment -> CommentResponseList
-    private List<CommentResponse> toCommentResponseList(List<Comment> commentList) {
+    private List<CommentListItemResponse> toCommentResponseList(List<Comment> commentList, Set<Long> parentIdWithChildren, Map<Long, Profile> profileMap) {
         return commentList.stream()
-                .map(this::toCommentResponse)
+                .map(comment -> toCommentResponse(comment, parentIdWithChildren.contains(comment.getId()), profileMap))
                 .toList();
     }
 
     // comment -> CommentResponse 변환
-    private CommentResponse toCommentResponse(Comment comment) {
-        Profile authorProfile = getProfile(comment.getAuthor());
-        return CommentResponse.of(comment, authorProfile);
+    private CommentListItemResponse toCommentResponse(Comment comment, boolean hasChildren, Map<Long, Profile> profileMap) {
+        Member author = comment.getAuthor();
+        Profile authorProfile = (author != null)
+                ? profileMap.get(author.getId()) : null;
+
+        return CommentListItemResponse.of(comment, authorProfile, hasChildren);
     }
 
+    private Map<Long, Profile> buildAuthorProfileMap(List<Comment> commentList) {
+        List<Member> authorList = commentList.stream()
+                .map(Comment::getAuthor)
+                .filter(Objects::nonNull)  // 탈퇴 회원 제외
+                .distinct()
+                .toList();
+
+        if (authorList.isEmpty()) {
+            return Map.of();
+        }
+
+        return profileRepository.findByMemberIn(authorList).stream()
+                .collect(Collectors.toMap(p -> p.getMember().getId(), p -> p));
+    }
 
     // parent 댓글이 게시글에 포함되는지 확인
     private void validateParentBelongsToPost(Comment parent, Long postId) {
