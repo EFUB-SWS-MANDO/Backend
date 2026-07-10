@@ -38,6 +38,9 @@ public class Comment extends BaseTimeEntity {
     @JoinColumn(name = "parent_id")
     private Comment parent;
 
+    @Column(nullable = false)
+    private boolean deleted = false;
+
     @Builder
     public Comment(String content, Member author, Post post, Comment parent) {
         this.content = content;
@@ -49,5 +52,10 @@ public class Comment extends BaseTimeEntity {
     // 댓글 작성자/요청자 일치 확인
     public boolean isAuthor(Member member) {
         return this.author.getId().equals(member.getId());
+    }
+
+    // 댓글 삭제
+    public void delete() {
+        this.deleted = true;
     }
 }

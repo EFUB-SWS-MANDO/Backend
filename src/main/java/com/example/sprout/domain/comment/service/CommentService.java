@@ -5,7 +5,6 @@ import com.example.sprout.domain.comment.dto.response.CommentResponse;
 import com.example.sprout.domain.comment.entity.Comment;
 import com.example.sprout.domain.comment.exception.CommentErrorCode;
 import com.example.sprout.domain.comment.repository.CommentRepository;
-import com.example.sprout.domain.follow.repository.FollowRepository;
 import com.example.sprout.domain.member.entity.Member;
 import com.example.sprout.domain.member.exception.MemberErrorCode;
 import com.example.sprout.domain.member.repository.MemberRepository;
@@ -15,7 +14,6 @@ import com.example.sprout.domain.post.repository.PostRepository;
 import com.example.sprout.domain.profile.entity.Profile;
 import com.example.sprout.domain.profile.exception.ProfileErrorCode;
 import com.example.sprout.domain.profile.repository.ProfileRepository;
-import com.example.sprout.global.common.response.ApiResponse;
 import com.example.sprout.global.error.BusinessException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -65,7 +63,7 @@ public class CommentService {
         validateAuthor(requester, comment);
 
         // 댓글 삭제
-        commentRepository.delete(comment);
+        comment.delete();
     }
 
     // Helper 함수
@@ -132,8 +130,9 @@ public class CommentService {
 
     // 댓글 작성자/요청자 일치 확인
     private void validateAuthor(Member member, Comment comment) {
-        if (!comment.isAuthor(member)) {
-            log.error("댓글 작성자가 아닙니다. - memberId, authorId: {}, {}", member.getId(), comment.getAuthor().getId());
+        if (comment.getAuthor() == null || !comment.isAuthor(member)) {
+            Long authorId = (comment.getAuthor() != null) ? comment.getAuthor().getId() : null;
+            log.error("댓글 작성자가 아닙니다. - memberId, authorId: {}, {}", member.getId(), authorId);
             throw new BusinessException(CommentErrorCode.COMMENT_ACCESS_DENIED);
         }
     }
