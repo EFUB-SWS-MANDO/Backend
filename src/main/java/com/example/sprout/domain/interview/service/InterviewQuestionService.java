@@ -16,7 +16,7 @@ public class InterviewQuestionService {
 
     @Transactional
     public void deleteAllByInterviewSession(InterviewSession interviewSession) {
-        interviewQuestionRepository.deleteAllByInterviewSession(interviewSession);
+        interviewQuestionRepository.deleteAllBySession(interviewSession);
     }
 
 }

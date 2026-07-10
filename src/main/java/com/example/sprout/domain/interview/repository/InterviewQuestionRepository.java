@@ -5,5 +5,5 @@ import com.example.sprout.domain.interview.entity.InterviewSession;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface InterviewQuestionRepository extends JpaRepository<InterviewQuestion, Long> {
-    void deleteAllByInterviewSession(InterviewSession interviewSession);
+    void deleteAllBySession(InterviewSession interviewSession);
 }
