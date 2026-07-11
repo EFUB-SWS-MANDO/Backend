@@ -49,6 +49,7 @@ public class JwtUtil {
     }
 
     public Long getAccessExpirationMs() {return accessExpirationMs;}
+    public Long getRefreshExpirationMs() {return refreshExpirationMs;}
 
     //토큰 유효성 검증
     public Claims validateToken(String token) {
