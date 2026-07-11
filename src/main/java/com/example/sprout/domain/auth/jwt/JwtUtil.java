@@ -1,7 +1,10 @@
 package com.example.sprout.domain.auth.jwt;
 
-import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
+import io.jsonwebtoken.security.SignatureException;
+import jakarta.servlet.http.HttpServletRequest;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -10,6 +13,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.Date;
 
 @Component
+@Slf4j
 public class JwtUtil {
 
     private final SecretKey key;
@@ -45,4 +49,35 @@ public class JwtUtil {
     }
 
     public Long getAccessExpirationMs() {return accessExpirationMs;}
+
+    //토큰 유효성 검증
+    public Claims validateToken(String token) {
+        try {
+            return Jwts.parser()
+                    .verifyWith(key)
+                    .build()
+                    .parseSignedClaims(token)
+                    .getPayload();
+
+        } catch (ExpiredJwtException e) {
+            //만료된 토큰
+            log.debug("만료된 토큰");
+            return null;
+        } catch (MalformedJwtException | SignatureException | UnsupportedJwtException e) {
+            //형식이 잘못된 경우/서명이 다른 경우/미지원 토큰
+            log.debug("유효하지 않은 토큰 (형식 오류/서명 불일치/미지원)");
+            return null;
+        } catch (IllegalArgumentException e) {
+            //토큰이 비거나 null인 경우
+            log.debug("토큰이 비어있거나 null");
+            return null;
+        }
+    }
+
+    //HTTP 요청 헤더에서 토큰 추출
+    public static String resolveToken(HttpServletRequest request) {
+        String header = request.getHeader("Authorization");
+        if (header != null && header.startsWith("Bearer ")) return header.substring(7);
+        return null;
+    }
 }
