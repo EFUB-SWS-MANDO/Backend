@@ -1,7 +1,6 @@
 package com.example.sprout.domain.comment.dto.response;
 
 import com.example.sprout.domain.comment.entity.Comment;
-import com.example.sprout.domain.comment.dto.response.SimpleMemberDto;
 import com.example.sprout.domain.profile.entity.Profile;
 
 import java.time.LocalDateTime;
@@ -18,9 +17,10 @@ public record CommentResponse(
 ) {
     public static CommentResponse of(Comment comment, Profile authorProfile) {
         String content = comment.isDeleted() ? "삭제된 댓글입니다" : comment.getContent();
+
         SimpleMemberDto author = (authorProfile != null)
                 ? SimpleMemberDto.from(authorProfile)
-                : SimpleMemberDto.withdrawn();
+                : SimpleMemberDto.unknown();
 
         return new CommentResponse(
                 comment.getId(),
