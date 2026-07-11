@@ -1,7 +1,9 @@
 package com.example.sprout.domain.auth.controller;
 
 import com.example.sprout.domain.auth.dto.request.SignInRequest;
+import com.example.sprout.domain.auth.dto.request.ReissueTokenRequest;
 import com.example.sprout.domain.auth.dto.response.SignInResponse;
+import com.example.sprout.domain.auth.dto.response.ReissueTokenResponse;
 import com.example.sprout.domain.auth.service.AuthService;
 import com.example.sprout.global.common.response.ApiResponse;
 import jakarta.validation.Valid;
@@ -29,4 +31,13 @@ public class AuthController {
 
         return ResponseEntity.ok(ApiResponse.success("로그인 성공", response));
     }
+
+    @PostMapping("/refresh")
+    public ResponseEntity<ApiResponse<ReissueTokenResponse>> reissueToken(@Valid @RequestBody ReissueTokenRequest request) {
+        log.info("토큰 재발급 요청");
+        ReissueTokenResponse response = authService.reissueToken(request);
+
+        return ResponseEntity.ok(ApiResponse.success("토큰 재발급 성공", response));
+    }
+
 }
