@@ -1,10 +1,10 @@
 package com.example.sprout.domain.auth.client.kakao;
 
+import com.example.sprout.domain.auth.AuthErrorCode;
 import com.example.sprout.domain.auth.client.OauthApiClient;
 import com.example.sprout.domain.auth.client.OauthUserInfo;
 import com.example.sprout.domain.member.enums.OauthProvider;
 import com.example.sprout.global.error.BusinessException;
-import com.example.sprout.global.error.GlobalErrorCode;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -26,7 +26,7 @@ public class KakaoApiClient implements OauthApiClient {
                     .bodyToMono(KakaoUserInfoResponse.class)
                     .block();
         } catch (WebClientResponseException e) {
-            throw new BusinessException(GlobalErrorCode.INVALID_KAKAO_TOKEN);
+            throw new BusinessException(AuthErrorCode.INVALID_KAKAO_TOKEN);
         }
     }
 
