@@ -31,7 +31,6 @@ import java.util.stream.Collectors;
 
 import static com.example.sprout.global.common.util.CursorPageUtils.hasNextPage;
 import static com.example.sprout.global.common.util.CursorPageUtils.trimToPageSize;
-import static com.example.sprout.global.common.util.CursorPageUtils.resolveNextIdAfter;
 
 import java.util.List;
 
@@ -75,29 +74,43 @@ public class CommentService {
         // 게시글 조회
         Post post = getPost(postId);
 
-        // idAfter가 있으면 그 댓글의 그룹키(threadRootId 혹은 자기 id)를 먼저 계산
-        Long lastGroupKey = resolveLastGroupKey(idAfter);
-
-        // limit + 1개 요청 -> 그만큼 반환되면 다음 페이지가 존재한다고 판단
+        // 최상위 댓글 limit + 1개 조회
         Pageable pageable = PageRequest.of(0, limit + 1);
-        List<Comment> commentList = commentRepository.findCommentsByPostIdOrderedByThread(postId, idAfter, lastGroupKey, pageable);
+        List<Comment> parentComments = commentRepository.findParentCommentsByPostId(postId, idAfter, pageable);
 
-        List<Long> commentIds = commentList.stream().map(Comment::getId).toList();
-        Set<Long> parentIdWithChildren = commentIds.isEmpty()
-                ? Set.of()
-                : new HashSet<>(commentRepository.findParentIdWithChildren(commentIds));
+        boolean hasNext = hasNextPage(parentComments, limit);
+        List<Comment> pageParents = trimToPageSize(parentComments, limit, hasNext);
 
-        boolean hasNext = hasNextPage(commentList, limit);
+        // 부모들의 자식 댓글 전부 조회
+        List<Long> parentIds = pageParents.stream().map(Comment::getId).toList();
+        List<Comment> children = parentIds.isEmpty()
+                ? List.of()
+                : commentRepository.findChildrenByThreadRootIds(parentIds);
 
-        // 여분으로 받아온 1개는 응답에 포함 x
-        List<Comment> pageCommentList = trimToPageSize(commentList, limit, hasNext);
+        // 부모 + 자식 합쳐서 스레드 그룹 -> id 순 정렬
+        List<Comment> fullList = new ArrayList<>(pageParents);
+        fullList.addAll(children);
+        fullList.sort(
+                Comparator.<Comment, Long>comparing(c -> c.getThreadRootId() != null ? c.getThreadRootId() : c.getId())
+                        .thenComparing(Comment::getId)
+        );
 
-        Map<Long, Profile> profileMap = buildAuthorProfileMap(pageCommentList);
+        // hasChildren 판별: 자식 목록에 등장하는 threadRootId 집합
+        Set<Long> parentIdWithChildren = children.stream()
+                .map(Comment::getThreadRootId)
+                .collect(Collectors.toSet());
 
-        List<CommentListItemResponse> commentResponseList = toCommentResponseList(pageCommentList, parentIdWithChildren, profileMap);
-        Long nextIdAfter = resolveNextIdAfter(pageCommentList, hasNext, Comment::getId);
-        Long totalElements = commentRepository.countByPostId(postId);
-        log.info("댓글 목록 조회 완료 - 반환 개수: {}, hasNext: {}", commentResponseList.size(), hasNext);
+        Map<Long, Profile> profileMap = buildAuthorProfileMap(fullList);
+        List<CommentListItemResponse> commentResponseList = toCommentResponseList(fullList, parentIdWithChildren, profileMap);
+
+        // nextIdAfter: 마지막 부모 댓글 id
+        Long nextIdAfter = hasNext ? pageParents.get(parentComments.size() - 1).getId() : null;
+
+        // totalElements: 전체 스레드(부모) 수
+        Long totalElements = commentRepository.countByPostIdAndParentIsNull(postId);
+
+        log.info("댓글 목록 조회 완료 - 부모 {}개, 전체(자식포함) {}개, hasNext: {}",
+                pageParents.size(), commentResponseList.size(), hasNext);
 
         return GetCommentListResponse.of(commentResponseList, nextIdAfter, hasNext, totalElements);
     }
@@ -152,6 +165,8 @@ public class CommentService {
         commentList.forEach(Comment::delete);
         log.info("탈퇴 회원 작성 댓글 일괄 삭제 완료 - memberId: {}, 처리 개수: {}", memberId, commentList.size());
     }
+
+
 
     // Helper 함수
 
@@ -255,15 +270,6 @@ public class CommentService {
             log.error("parent가 해당 게시글에 속하지 않습니다. - parentPostId: {}, postId: {}", parent.getPost().getId(), postId);
             throw new BusinessException(CommentErrorCode.PARENT_NOT_IN_POST);
         }
-    }
-
-    // idAfter 댓글의 그룹키(threadRootId ?? id) 계산
-    private Long resolveLastGroupKey(Long idAfter) {
-        if (idAfter == null) {
-            return null;
-        }
-        Comment lastComment = getComment(idAfter);
-        return lastComment.getThreadRootId() != null ? lastComment.getThreadRootId() : lastComment.getId();
     }
 
     // 댓글 작성자/요청자 일치 확인
