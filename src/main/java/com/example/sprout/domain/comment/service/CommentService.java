@@ -72,9 +72,12 @@ public class CommentService {
         // 게시글 조회
         Post post = getPost(postId);
 
+        // idAfter가 있으면 그 댓글의 그룹키(threadRootId 혹은 자기 id)를 먼저 계산
+        Long lastGroupKey = resolveLastGroupKey(idAfter);
+
         // limit + 1개 요청 -> 그만큼 반환되면 다음 페이지가 존재한다고 판단
         Pageable pageable = PageRequest.of(0, limit + 1);
-        List<Comment> commentList = commentRepository.findCommentsByPostId(postId, idAfter, pageable);
+        List<Comment> commentList = commentRepository.findCommentsByPostIdOrderedByThread(postId, idAfter, lastGroupKey, pageable);
 
         List<Long> commentIds = commentList.stream().map(Comment::getId).toList();
         Set<Long> parentIdWithChildren = commentIds.isEmpty()
@@ -125,6 +128,15 @@ public class CommentService {
                 });
     }
 
+    // Comment 조회
+    private Comment getComment(Long commentId) {
+        return commentRepository.findById(commentId)
+                .orElseThrow(() -> {
+                    log.error("존재하지 않는 댓글 - commentId: {}", commentId);
+                    return new BusinessException(CommentErrorCode.COMMENT_NOT_FOUND);
+                });
+    }
+
     // parent 댓글 확정 (null / parentId)
     private Comment resolveParent(Long parentId, Long postId) {
         if (parentId == null) {
@@ -141,6 +153,12 @@ public class CommentService {
         // 삭제된 댓글에는 대댓글 불가
         if (parent.isDeleted()) {
             throw new BusinessException(CommentErrorCode.CANNOT_REPLY_TO_DELETED_COMMENT);
+        }
+
+        // 대댓글에는 대댓글 불가
+        if (parent.getParent() != null) {
+            log.error("대댓글에는 답글을 달 수 없습니다 - parentId: {}", parentId);
+            throw new BusinessException(CommentErrorCode.CANNOT_REPLY_TO_REPLY);
         }
 
         return parent;
@@ -183,5 +201,14 @@ public class CommentService {
             log.error("parent가 해당 게시글에 속하지 않습니다. - parentPostId: {}, postId: {}", parent.getPost().getId(), postId);
             throw new BusinessException(CommentErrorCode.PARENT_NOT_IN_POST);
         }
+    }
+
+    // idAfter 댓글의 그룹키(threadRootId ?? id) 계산
+    private Long resolveLastGroupKey(Long idAfter) {
+        if (idAfter == null) {
+            return null;
+        }
+        Comment lastComment = getComment(idAfter);
+        return lastComment.getThreadRootId() != null ? lastComment.getThreadRootId() : lastComment.getId();
     }
 }
