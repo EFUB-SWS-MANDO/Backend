@@ -1,6 +1,7 @@
 package com.example.sprout.domain.comment.service;
 
 import com.example.sprout.domain.comment.dto.request.CreateCommentRequest;
+import com.example.sprout.domain.comment.dto.request.UpdateCommentRequest;
 import com.example.sprout.domain.comment.dto.response.CommentResponse;
 import com.example.sprout.domain.comment.entity.Comment;
 import com.example.sprout.domain.comment.exception.CommentErrorCode;
@@ -51,6 +52,27 @@ public class CommentService {
         log.info("댓글 생성 성공");
 
         return CommentResponse.of(newComment, authorProfile);
+    }
+
+    // 댓글 수정
+    @Transactional
+    public CommentResponse updateComment(Long requesterId, Long commentId, UpdateCommentRequest request) {
+        // 멤버 조회
+        Member requester = getMember(requesterId);
+        // 댓글 조회
+        Comment comment = getComment(commentId);
+
+        // requester == comment author랑 일치 여부 확인
+        validateAuthor(requester, comment);
+        validateNotDeleted(comment);
+
+        // 댓글 수정
+        comment.updateComment(request.content());
+
+        // 작성자 프로필 조회
+        Profile authorProfile = getProfile(requester);
+
+        return CommentResponse.of(comment, authorProfile);
     }
 
     // 댓글 삭제
@@ -151,6 +173,14 @@ public class CommentService {
             Long authorId = (comment.getAuthor() != null) ? comment.getAuthor().getId() : null;
             log.error("댓글 작성자가 아닙니다. - memberId, authorId: {}, {}", member.getId(), authorId);
             throw new BusinessException(CommentErrorCode.COMMENT_ACCESS_DENIED);
+        }
+    }
+
+    // 삭제된 댓글인지 확인
+    private void validateNotDeleted(Comment comment) {
+        if (comment.isDeleted()) {
+            log.error("이미 삭제된 댓글은 수정할 수 없습니다 - commentId: {}", comment.getId());
+            throw new BusinessException(CommentErrorCode.ALREADY_DELETED_COMMENT);
         }
     }
 }

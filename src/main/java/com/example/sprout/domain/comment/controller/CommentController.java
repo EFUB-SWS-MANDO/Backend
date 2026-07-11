@@ -2,6 +2,7 @@ package com.example.sprout.domain.comment.controller;
 
 import com.example.sprout.domain.auth.security.AuthMember;
 import com.example.sprout.domain.comment.dto.request.CreateCommentRequest;
+import com.example.sprout.domain.comment.dto.request.UpdateCommentRequest;
 import com.example.sprout.domain.comment.dto.response.CommentResponse;
 import com.example.sprout.domain.comment.service.CommentService;
 import com.example.sprout.global.common.response.ApiResponse;
@@ -29,6 +30,18 @@ public class CommentController {
 
         CommentResponse response = commentService.createComment(requesterId, postId, request);
         return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success("댓글 생성 성공", response));
+    }
+
+    // 댓글 수정
+    @PatchMapping("/comments/{commentId}")
+    public ResponseEntity<ApiResponse<CommentResponse>> updateComment(@AuthMember Long requesterId,
+                                                                      @PathVariable("commentId") Long commentId,
+                                                                      @RequestBody @Valid UpdateCommentRequest request) {
+        log.info("댓글 수정 API 요청 - commentId: {}", commentId);
+
+        CommentResponse response = commentService.updateComment(requesterId, commentId, request);
+
+        return ResponseEntity.ok(ApiResponse.success("댓글 수정 성공", response));
     }
 
     // 댓글 삭제

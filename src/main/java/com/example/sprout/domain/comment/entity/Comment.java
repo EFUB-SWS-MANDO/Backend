@@ -54,6 +54,11 @@ public class Comment extends BaseTimeEntity {
         return this.author.getId().equals(member.getId());
     }
 
+    // 댓글 수정
+    public void updateComment(String content) {
+        this.content = content;
+    }
+
     // 댓글 삭제
     public void delete() {
         this.deleted = true;
