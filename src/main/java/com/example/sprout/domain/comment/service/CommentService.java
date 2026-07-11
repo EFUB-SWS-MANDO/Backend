@@ -104,7 +104,7 @@ public class CommentService {
         List<CommentListItemResponse> commentResponseList = toCommentResponseList(fullList, parentIdWithChildren, profileMap);
 
         // nextIdAfter: 마지막 부모 댓글 id
-        Long nextIdAfter = hasNext ? pageParents.get(parentComments.size() - 1).getId() : null;
+        Long nextIdAfter = hasNext ? pageParents.get(pageParents.size() - 1).getId() : null;
 
         // totalElements: 전체 스레드(부모) 수
         Long totalElements = commentRepository.countByPostIdAndParentIsNull(postId);
