@@ -2,7 +2,6 @@ package com.example.sprout.global.config;
 
 import com.example.sprout.domain.auth.jwt.JwtFilter;
 import com.example.sprout.domain.auth.jwt.JwtUtil;
-import com.example.sprout.domain.auth.security.CustomAccessDeniedHandler;
 import com.example.sprout.domain.auth.security.CustomAuthenticationEntryPoint;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
@@ -20,7 +19,6 @@ public class SecurityConfig {
 
     private final JwtUtil jwtUtil;
     private final CustomAuthenticationEntryPoint customAuthenticationEntryPoint;
-    private final CustomAccessDeniedHandler customAccessDeniedHandler;
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
@@ -46,7 +44,6 @@ public class SecurityConfig {
 
         http.exceptionHandling(e -> e
                 .authenticationEntryPoint(customAuthenticationEntryPoint)
-                .accessDeniedHandler(customAccessDeniedHandler)
         );
 
         return http.build();

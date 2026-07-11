@@ -15,6 +15,7 @@ import java.util.List;
 @Entity
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
+@Table(name = "comments")
 public class Comment extends BaseTimeEntity {
 
     @Id
@@ -22,7 +23,7 @@ public class Comment extends BaseTimeEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false)
+    @Column(nullable = false, length = 300)
     private String content;
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -30,15 +31,12 @@ public class Comment extends BaseTimeEntity {
     private Member author;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "post_id", nullable = false)
+    @JoinColumn(name = "post_id", updatable = false, nullable = false)
     private Post post;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "parent_id")
     private Comment parent;
-
-    @OneToMany(mappedBy = "parent", cascade = CascadeType.ALL, orphanRemoval = true)
-    private final List<Comment> children = new ArrayList<>();
 
     @Builder
     public Comment(String content, Member author, Post post, Comment parent) {
@@ -46,10 +44,5 @@ public class Comment extends BaseTimeEntity {
         this.author = author;
         this.post = post;
         this.parent = parent;
-    }
-
-    public void addChild(Comment child) {
-        children.add(child);
-        child.parent = this;
     }
 }
