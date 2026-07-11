@@ -21,6 +21,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
+
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -71,6 +73,36 @@ public class CommentService {
         Profile authorProfile = getProfile(requester);
 
         return CommentResponse.of(comment, authorProfile);
+    }
+
+    // 댓글 삭제
+
+    @Transactional
+    public void deleteComment(Long requesterId, Long commentId) {
+        // 멤버 조회
+        Member requester = getMember(requesterId);
+        // 댓글 조회
+        Comment comment = getComment(commentId);
+        // 작성자/요청자 일치 확인
+        validateAuthor(requester, comment);
+
+        // 댓글 삭제
+        comment.delete();
+    }
+
+    // 회원 탈퇴 시 해당 회원이 작성한 모든 댓글을 soft delete 처리
+    // Member 도메인의 탈퇴 서비스에서 호출
+    @Transactional
+    public void softDeleteAllByAuthor(Long memberId) {
+        List<Comment> commentList = commentRepository.findAllByAuthorId(memberId);
+
+        if (commentList.isEmpty()) {
+            log.info("탈퇴 회원 작성 댓글 없음 - memberId: {}", memberId);
+            return;
+        }
+
+        commentList.forEach(Comment::delete);
+        log.info("탈퇴 회원 작성 댓글 일괄 삭제 완료 - memberId: {}, 처리 개수: {}", memberId, commentList.size());
     }
 
     // Helper 함수
