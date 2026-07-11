@@ -1,5 +1,6 @@
 package com.example.sprout.domain.comment.controller;
 
+import com.example.sprout.domain.auth.security.AuthMember;
 import com.example.sprout.domain.comment.dto.request.CreateCommentRequest;
 import com.example.sprout.domain.comment.dto.request.UpdateCommentRequest;
 import com.example.sprout.domain.comment.dto.response.CommentResponse;
@@ -35,12 +36,10 @@ public class CommentController {
 
     // 댓글 수정
     @PatchMapping("/comments/{commentId}")
-    public ResponseEntity<ApiResponse<CommentResponse>> updateComment(@PathVariable("commentId") Long commentId,
+    public ResponseEntity<ApiResponse<CommentResponse>> updateComment(@AuthMember Long requesterId,
+                                                                      @PathVariable("commentId") Long commentId,
                                                                       @RequestBody @Valid UpdateCommentRequest request) {
         log.info("댓글 수정 API 요청 - commentId: {}", commentId);
-
-        // TODO 사용자 ID 추후 @AuthMember로 변경
-        Long requesterId = 1L;
 
         CommentResponse response = commentService.updateComment(requesterId, commentId, request);
 
