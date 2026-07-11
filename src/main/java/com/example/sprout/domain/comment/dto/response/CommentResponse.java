@@ -34,6 +34,9 @@ public record CommentResponse(
     }
 
     private static boolean resolveEdited(Comment comment) {
+        if (comment.getUpdatedAt() == null || comment.getCreatedAt() == null) {
+            return false;
+        }
         return comment.getUpdatedAt().isAfter(comment.getCreatedAt());
     }
 }
