@@ -74,17 +74,6 @@ public class JwtUtil {
         }
     }
 
-    //토큰에서 memberId 추출
-    public Long getMemberId(String token) {
-        Claims claims = Jwts.parser()
-                .verifyWith(key)
-                .build()
-                .parseSignedClaims(token)
-                .getPayload();
-
-        return claims.get("memberId", Long.class);
-    }
-
     //HTTP 요청 헤더에서 토큰 추출
     public static String resolveToken(HttpServletRequest request) {
         String header = request.getHeader("Authorization");
