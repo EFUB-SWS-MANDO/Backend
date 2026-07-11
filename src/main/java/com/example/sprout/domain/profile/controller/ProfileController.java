@@ -1,0 +1,28 @@
+package com.example.sprout.domain.profile.controller;
+
+import com.example.sprout.domain.auth.security.AuthMember;
+import com.example.sprout.domain.profile.dto.response.ProfileResponse;
+import com.example.sprout.domain.profile.service.ProfileService;
+import com.example.sprout.global.common.response.ApiResponse;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+@RestController
+@RequestMapping("/api")
+@RequiredArgsConstructor
+@Slf4j
+public class ProfileController {
+
+    private final ProfileService profileService;
+
+    @GetMapping("/members/{memberId}/profiles")
+    public ResponseEntity<ApiResponse<ProfileResponse>> getProfile(@PathVariable("memberId") Long memberId,
+                                                                   @AuthMember Long requesterId) {
+
+        ProfileResponse response = profileService.getProfile(requesterId, memberId);
+        return ResponseEntity.ok(ApiResponse.success("프로필 조회 성공", response));
+    }
+
+}
