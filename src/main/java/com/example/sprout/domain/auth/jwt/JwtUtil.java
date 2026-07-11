@@ -75,17 +75,6 @@ public class JwtUtil {
         }
     }
 
-    //토큰에서 memberId 추출
-    public Long getMemberId(String token) {
-        Claims claims = Jwts.parser()
-                .verifyWith(key)
-                .build()
-                .parseSignedClaims(token)
-                .getPayload();
-
-        return claims.get("memberId", Long.class);
-    }
-
     public long getRemainingExpiration(Claims claims) {
         Date expiration = claims.getExpiration();
         long remainingMs = expiration.getTime()-System.currentTimeMillis();
