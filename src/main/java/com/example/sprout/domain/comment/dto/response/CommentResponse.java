@@ -13,7 +13,8 @@ public record CommentResponse(
         Long parentId,
         String content,
         boolean deleted,
-        LocalDateTime updatedAt
+        LocalDateTime createdAt,
+        boolean edited
 ) {
     public static CommentResponse of(Comment comment, Profile authorProfile) {
         String content = comment.isDeleted() ? "삭제된 댓글입니다" : comment.getContent();
@@ -27,7 +28,12 @@ public record CommentResponse(
                 comment.getParent() != null ? comment.getParent().getId() : null,
                 content,
                 comment.isDeleted(),
-                comment.getUpdatedAt()
+                comment.getCreatedAt(),
+                resolveEdited(comment)
         );
+    }
+
+    private static boolean resolveEdited(Comment comment) {
+        return comment.getUpdatedAt().isAfter(comment.getCreatedAt());
     }
 }
