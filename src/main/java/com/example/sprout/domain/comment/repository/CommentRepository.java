@@ -11,11 +11,20 @@ import java.util.Optional;
 
 public interface CommentRepository extends JpaRepository<Comment, Long> {
 
-    @Query("SELECT c FROM Comment c WHERE c.post.id = :postId AND (:idAfter IS NULL OR c.id > :idAfter)" +
-            "ORDER BY c.id ASC")
-    List<Comment> findCommentsByPostId(
+    @Query("""
+        SELECT c FROM Comment c
+            WHERE c.post.id = :postId
+                AND (
+                    :idAfter IS NULL
+                    OR FUNCTION('COALESCE', c.threadRootId, c.id) > :lastGroupKey
+                    OR (FUNCTION('COALESCE', c.threadRootId, c.id) = :lastGroupKey AND c.id > :idAfter)   
+                    )
+             ORDER BY FUNCTION('COALESCE', c.threadRootId, c.id) ASC, c.id ASC
+    """)
+    List<Comment> findCommentsByPostIdOrderedByThread(
             @Param("postId") Long postId,
             @Param("idAfter") Long idAfter,
+            @Param("lastGroupKey") Long lastGroupKey,
             Pageable pageable
     );
 
