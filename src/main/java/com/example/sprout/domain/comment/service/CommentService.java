@@ -6,7 +6,6 @@ import com.example.sprout.domain.comment.dto.response.CommentResponse;
 import com.example.sprout.domain.comment.entity.Comment;
 import com.example.sprout.domain.comment.exception.CommentErrorCode;
 import com.example.sprout.domain.comment.repository.CommentRepository;
-import com.example.sprout.domain.follow.repository.FollowRepository;
 import com.example.sprout.domain.member.entity.Member;
 import com.example.sprout.domain.member.exception.MemberErrorCode;
 import com.example.sprout.domain.member.repository.MemberRepository;
@@ -22,6 +21,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Comparator;
 import java.util.List;
 
 @Slf4j
@@ -108,16 +108,10 @@ public class CommentService {
 
     @Transactional
     public void deleteByPost(Post post) {
-        List<Comment> commentList = commentRepository.findAllByPost(post);
-        //TODO: 게시글 삭제 시 해당 글의 댓글 전부 hard delete/soft delete? -> hard delete일 경우 대댓글 삭제 순서 작업 필요
+        List<Comment> commentList = commentRepository.findAllByPost(post)
+                .stream().sorted(Comparator.comparing(Comment::getId).reversed())
+                        .toList();
         commentRepository.deleteAll(commentList);
-    }
-
-    @Transactional
-    public void deleteCommentAuthor(Member member) {
-        List<Comment> commentList = commentRepository.findAllByAuthor(member);
-        //TODO: 확인 필요
-        for (Comment comment : commentList) comment.deleteAuthor();
     }
 
     // Helper 함수

@@ -9,9 +9,6 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
-import java.util.ArrayList;
-import java.util.List;
-
 @Entity
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
@@ -27,7 +24,11 @@ public class Comment extends BaseTimeEntity {
     private String content;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "author_id", updatable = false, nullable = false)
+    @JoinColumn(name = "author_id", updatable = false,
+            foreignKey = @ForeignKey(
+                    name = "fk_comment_author",
+                    foreignKeyDefinition = "FOREIGN KEY (author_id) REFERENCES members(id) ON DELETE SET NULL"
+            ))
     private Member author;
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -64,7 +65,4 @@ public class Comment extends BaseTimeEntity {
         this.deleted = true;
     }
 
-    public void deleteAuthor() {
-        this.author = null;
-    }
 }

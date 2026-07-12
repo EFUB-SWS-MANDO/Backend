@@ -37,11 +37,11 @@ public class MemberService {
         Member member = findById(memberId);
 
         //Member를 가지는 자식 엔티티 우선 삭제
-        //Profile -> Comment(작성자 null처리) -> PostLike -> Post -> Resume -> Interview -> Follow
+        //Profile -> Comment -> PostLike -> Post -> Resume -> Interview -> Follow
         profileService.deleteByMember(member);
         postLikeService.deleteByMember(member);
         postService.deletePostByMember(member);
-        commentService.deleteCommentAuthor(member);
+        commentService.softDeleteAllByAuthor(memberId);
         resumeService.deleteByMember(member);
         interviewSessionService.deleteAllByMember(member);
         followService.deleteFollowByMember(member);
