@@ -1,4 +1,4 @@
-package com.example.sprout.profile;
+package com.example.sprout.domain.profile.service;
 
 import com.example.sprout.domain.member.entity.Member;
 import com.example.sprout.domain.member.exception.MemberErrorCode;
@@ -8,7 +8,6 @@ import com.example.sprout.domain.profile.dto.response.CreateProfileResponse;
 import com.example.sprout.domain.profile.entity.Profile;
 import com.example.sprout.domain.profile.exception.ProfileErrorCode;
 import com.example.sprout.domain.profile.repository.ProfileRepository;
-import com.example.sprout.domain.profile.service.ProfileService;
 import com.example.sprout.global.error.BusinessException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
