@@ -1,0 +1,9 @@
+spring:
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+
+jwt:
+  secret: sprout-ci-test-default-secret-32bytes-minimum-length
+  access-expiration: 3600000
+  refresh-expiration: 1209600000
