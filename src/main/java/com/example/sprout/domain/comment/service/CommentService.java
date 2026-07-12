@@ -29,10 +29,9 @@ import org.springframework.data.domain.Pageable;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static com.example.sprout.global.common.util.CursorPageUtils.hasNextPage;
-import static com.example.sprout.global.common.util.CursorPageUtils.trimToPageSize;
-
 import java.util.List;
+
+import static com.example.sprout.global.common.util.CursorPageUtils.*;
 
 @Slf4j
 @Service
@@ -104,7 +103,7 @@ public class CommentService {
         List<CommentListItemResponse> commentResponseList = toCommentResponseList(fullList, parentIdWithChildren, profileMap);
 
         // nextIdAfter: 마지막 부모 댓글 id
-        Long nextIdAfter = hasNext ? pageParents.get(pageParents.size() - 1).getId() : null;
+        Long nextIdAfter = resolveNextIdAfter(pageParents, hasNext, Comment::getId);
 
         // totalElements: 전체 스레드(부모) 수
         Long totalElements = commentRepository.countByPostIdAndParentIsNull(postId);
