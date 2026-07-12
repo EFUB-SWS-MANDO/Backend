@@ -1,5 +1,6 @@
 package com.example.sprout.domain.member.controller;
 
+import com.example.sprout.domain.auth.security.AuthMember;
 import com.example.sprout.domain.member.service.MemberService;
 import com.example.sprout.global.common.response.ApiResponse;
 import lombok.RequiredArgsConstructor;
@@ -18,13 +19,9 @@ public class MemberController {
     private final MemberService memberService;
 
     @DeleteMapping
-//    public ResponseEntity<ApiResponse<Void>> deleteMember(@AuthMember Long memberId) { :@AuthMember 사용 후 활성화
-    public ResponseEntity<ApiResponse<Void>> deleteMember() {
-        //TODO: 추후 @AuthMember 사용으로 수정 예정
-        Long memberId = 1L; //@AuthMember 사용 전 임시 테스트용
+    public ResponseEntity<ApiResponse<Void>> deleteMember(@AuthMember Long memberId) {
 
         log.info("회원탈퇴 요청 - memberId: {}", memberId);
-
         memberService.deleteMember(memberId);
 
         return ResponseEntity.ok(ApiResponse.success("회원탈퇴 성공"));
