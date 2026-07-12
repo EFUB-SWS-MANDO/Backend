@@ -27,7 +27,7 @@ public class Comment extends BaseTimeEntity {
     private String content;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "author_id")
+    @JoinColumn(name = "author_id", updatable = false, nullable = false)
     private Member author;
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -38,12 +38,30 @@ public class Comment extends BaseTimeEntity {
     @JoinColumn(name = "parent_id")
     private Comment parent;
 
+    @Column(nullable = false)
+    private boolean deleted = false;
+
     @Builder
     public Comment(String content, Member author, Post post, Comment parent) {
         this.content = content;
         this.author = author;
         this.post = post;
         this.parent = parent;
+    }
+
+    // 댓글 작성자/요청자 일치 확인
+    public boolean isAuthor(Member member) {
+        return this.author.getId().equals(member.getId());
+    }
+
+    // 댓글 수정
+    public void updateComment(String content) {
+        this.content = content;
+    }
+
+    // 댓글 삭제
+    public void delete() {
+        this.deleted = true;
     }
 
     public void deleteAuthor() {
