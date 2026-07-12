@@ -1,4 +1,4 @@
-package com.example.sprout.category.initializer;
+package com.example.sprout.domain.category.initializer;
 
 import com.example.sprout.domain.category.initializer.CategoryDataInitializer;
 import com.example.sprout.domain.category.repository.CategoryRepository;

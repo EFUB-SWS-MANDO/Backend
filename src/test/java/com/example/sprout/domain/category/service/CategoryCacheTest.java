@@ -1,4 +1,4 @@
-package com.example.sprout.category.service;
+package com.example.sprout.domain.category.service;
 
 import com.example.sprout.domain.category.entity.Category;
 import com.example.sprout.domain.category.repository.CategoryRepository;

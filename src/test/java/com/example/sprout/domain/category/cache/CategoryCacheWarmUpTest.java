@@ -1,4 +1,4 @@
-package com.example.sprout.category.cache;
+package com.example.sprout.domain.category.cache;
 
 import com.example.sprout.domain.category.cache.CategoryCacheWarmUp;
 import com.example.sprout.domain.category.service.CategoryService;
