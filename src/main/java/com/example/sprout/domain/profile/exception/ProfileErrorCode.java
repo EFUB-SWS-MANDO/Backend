@@ -9,8 +9,7 @@ import org.springframework.http.HttpStatus;
 @RequiredArgsConstructor
 public enum ProfileErrorCode implements ErrorCode {
 
-    PROFILE_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 프로필입니다."),
-    PROFILE_ACCESS_DENIED(HttpStatus.FORBIDDEN, "권한이 없습니다.");
+    PROFILE_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 프로필입니다.");
 
     private final HttpStatus status;
     private final String message;
