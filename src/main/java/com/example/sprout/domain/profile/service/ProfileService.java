@@ -3,6 +3,7 @@ package com.example.sprout.domain.profile.service;
 import com.example.sprout.domain.follow.repository.FollowRepository;
 import com.example.sprout.domain.member.entity.Member;
 import com.example.sprout.domain.member.service.MemberService;
+import com.example.sprout.domain.profile.dto.request.UpdateProfileRequest;
 import com.example.sprout.domain.profile.dto.response.ProfileResponse;
 import com.example.sprout.domain.profile.entity.Profile;
 import com.example.sprout.domain.profile.exception.ProfileErrorCode;
@@ -32,13 +33,31 @@ public class ProfileService {
         int followeeCount = followRepository.countByFollower(member);
         boolean isMe = member.equals(requester);
 
+        log.info("프로필 조회 성공 - requesterId: {}, memberId: {}", requesterId, memberId);
         return ProfileResponse.of(profile, followerCount, followeeCount, isMe);
+    }
+
+    @Transactional
+    public ProfileResponse updateProfile(Long requesterId, UpdateProfileRequest request) {
+        Member member = memberService.findMemberById(requesterId);
+        Profile profile = findProfileByMember(member);
+
+        profile.updateProfile(request.nickname(), request.profileImage(), request.bio());
+
+        int followerCount = followRepository.countByFollowee(member);
+        int followeeCount = followRepository.countByFollower(member);
+
+        log.info("프로필 수정 성공 - requesterId: {}, profileId: {}", requesterId, profile.getId());
+        return ProfileResponse.of(profile, followerCount, followeeCount, true);
     }
 
     //헬퍼 메소드
     public Profile findProfileByMember(Member member) {
         return profileRepository.findByMember(member)
-                .orElseThrow(() -> new BusinessException(ProfileErrorCode.PROFILE_NOT_FOUND));
+                .orElseThrow(() -> {
+                    log.debug("존재하지 않는 프로필 조회 시도 - memberId: {}", member.getId());
+                    return new BusinessException(ProfileErrorCode.PROFILE_NOT_FOUND);
+                });
     }
 
 }

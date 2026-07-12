@@ -1,9 +1,11 @@
 package com.example.sprout.domain.profile.controller;
 
 import com.example.sprout.domain.auth.security.AuthMember;
+import com.example.sprout.domain.profile.dto.request.UpdateProfileRequest;
 import com.example.sprout.domain.profile.dto.response.ProfileResponse;
 import com.example.sprout.domain.profile.service.ProfileService;
 import com.example.sprout.global.common.response.ApiResponse;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -25,4 +27,12 @@ public class ProfileController {
         return ResponseEntity.ok(ApiResponse.success("프로필 조회 성공", response));
     }
 
+    @PatchMapping("/me/profiles")
+    public ResponseEntity<ApiResponse<ProfileResponse>> updateProfile(@AuthMember Long requesterId,
+                                                                      @Valid @RequestBody UpdateProfileRequest request) {
+
+        log.info("프로필 수정 요청 - requesterId: {}", requesterId);
+        ProfileResponse response = profileService.updateProfile(requesterId, request);
+        return ResponseEntity.ok(ApiResponse.success("프로필 수정 성공", response));
+    }
 }
