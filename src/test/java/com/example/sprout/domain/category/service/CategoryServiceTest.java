@@ -2,13 +2,11 @@ package com.example.sprout.domain.category.service;
 
 import com.example.sprout.domain.category.entity.Category;
 import com.example.sprout.domain.category.repository.CategoryRepository;
-import com.example.sprout.domain.category.service.CategoryService;
 import com.example.sprout.support.IntegrationTestSupport;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.cache.CacheManager;
 import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 
 import java.util.List;
@@ -16,12 +14,9 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.*;
 
-public class CategoryCacheTest extends IntegrationTestSupport {
+public class CategoryServiceTest extends IntegrationTestSupport {
 
-    @Autowired
-    private CacheManager cacheManager;
-
-    @Autowired
+   @Autowired
     private CategoryService categoryService;
 
     @MockitoSpyBean
