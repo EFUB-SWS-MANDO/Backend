@@ -1,6 +1,7 @@
 package com.example.sprout.domain.category.controller;
 
 import com.example.sprout.domain.auth.security.AuthMember;
+import com.example.sprout.domain.category.dto.CategoryDto;
 import com.example.sprout.domain.category.service.CategoryService;
 import com.example.sprout.global.common.response.ApiResponse;
 import lombok.RequiredArgsConstructor;
@@ -21,17 +22,17 @@ public class CategoryController {
     private  final CategoryService categoryService;
 
     @GetMapping
-    public ResponseEntity<ApiResponse<List<String>>> getCategories(
+    public ResponseEntity<ApiResponse<CategoryDto>> getCategories(
             @AuthMember Long memberId
     ) {
         log.info("category 조회 요청, requesterId={}", memberId);
 
-        List<String> categories = categoryService.getCategories();
+        CategoryDto response = categoryService.getCategories();
 
         return ResponseEntity.ok(
                 ApiResponse.success(
                         "카테고리 조회 성공",
-                        categories
+                        response
                 )
         );
     }
