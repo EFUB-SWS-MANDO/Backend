@@ -12,4 +12,5 @@ public interface ProfileRepository extends JpaRepository<Profile, Long> {
     Optional<Profile> findByMember(Member member);
 
     List<Profile> findByMemberIn(List<Member> members);
+    void deleteByMember(Member member);
 }

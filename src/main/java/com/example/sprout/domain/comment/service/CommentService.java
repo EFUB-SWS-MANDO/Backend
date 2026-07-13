@@ -28,7 +28,7 @@ import org.springframework.data.domain.Pageable;
 
 import java.util.*;
 import java.util.stream.Collectors;
-
+import java.util.Comparator;
 import java.util.List;
 
 import static com.example.sprout.global.common.util.CursorPageUtils.*;
@@ -165,7 +165,13 @@ public class CommentService {
         log.info("탈퇴 회원 작성 댓글 일괄 삭제 완료 - memberId: {}, 처리 개수: {}", memberId, commentList.size());
     }
 
-
+    @Transactional
+    public void deleteByPost(Post post) {
+        List<Comment> commentList = commentRepository.findAllByPost(post)
+                .stream().sorted(Comparator.comparing(Comment::getId).reversed())
+                        .toList();
+        commentRepository.deleteAll(commentList);
+    }
 
     // Helper 함수
 
