@@ -1,13 +1,11 @@
 package com.example.sprout.domain.auth.controller;
 
 import com.example.sprout.domain.auth.dto.response.TestTokenResponse;
-import com.example.sprout.domain.auth.jwt.JwtUtil;
 import com.example.sprout.domain.auth.security.AuthMember;
 import com.example.sprout.domain.auth.service.TestAuthService;
 import com.example.sprout.global.common.response.ApiResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.aspectj.weaver.ast.Test;
 import org.springframework.context.annotation.Profile;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
