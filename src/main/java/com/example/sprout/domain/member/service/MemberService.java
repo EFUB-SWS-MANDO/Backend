@@ -1,5 +1,6 @@
 package com.example.sprout.domain.member.service;
 
+import com.example.sprout.domain.auth.service.AuthService;
 import com.example.sprout.domain.comment.service.CommentService;
 import com.example.sprout.domain.follow.service.FollowService;
 import com.example.sprout.domain.interview.service.InterviewSessionService;
@@ -11,6 +12,7 @@ import com.example.sprout.domain.post.service.PostService;
 import com.example.sprout.domain.profile.service.ProfileService;
 import com.example.sprout.domain.resume.service.ResumeService;
 import com.example.sprout.global.error.BusinessException;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -23,6 +25,7 @@ public class MemberService {
 
     private final MemberRepository memberRepository;
 
+    private final AuthService authService;
     private final PostService postService;
     private final ResumeService resumeService;
     private final InterviewSessionService interviewSessionService;
@@ -32,7 +35,7 @@ public class MemberService {
     private final CommentService commentService;
 
     @Transactional
-    public void deleteMember(Long memberId) {
+    public void deleteMember(Long memberId, HttpServletRequest request) {
 
         Member member = findById(memberId);
 
@@ -49,6 +52,9 @@ public class MemberService {
         //Member 삭제
         memberRepository.delete(member);
         log.info("회원탈퇴 성공 - memberId: {}", memberId);
+
+        //Member 로그아웃
+        authService.signOut(memberId,request);
     }
 
     private Member findById(Long memberId) {
