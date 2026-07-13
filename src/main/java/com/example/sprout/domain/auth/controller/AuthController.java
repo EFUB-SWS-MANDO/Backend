@@ -43,7 +43,7 @@ public class AuthController {
     }
 
     @PostMapping("/refresh")
-    public ResponseEntity<ApiResponse<ReissueTokenResponse>> reissueToken(@RequestBody ReissueTokenRequest request) {
+    public ResponseEntity<ApiResponse<ReissueTokenResponse>> reissueToken(@Valid @RequestBody ReissueTokenRequest request) {
         log.info("토큰 재발급 요청");
         ReissueTokenResponse response = authService.reissueToken(request);
 
