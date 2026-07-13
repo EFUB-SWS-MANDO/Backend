@@ -33,7 +33,7 @@ public class SecurityConfig {
         http.authorizeHttpRequests((auth) -> auth
                 .requestMatchers("/api/auth/sign-in",
                         "/", "/api/interviews/{interviewSessionId}/stream",
-                        "/api/auth/refresh", "/api/test/token").permitAll()
+                        "/api/auth/refresh", "/api/test/**").permitAll()
                 .anyRequest().authenticated());
 
         //필터 등록
