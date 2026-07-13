@@ -8,6 +8,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -20,6 +21,7 @@ import java.io.IOException;
 public class JwtFilter extends OncePerRequestFilter {
 
     private final JwtUtil jwtUtil;
+    private final RedisTemplate<String, String> redisTemplate;
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
@@ -27,6 +29,9 @@ public class JwtFilter extends OncePerRequestFilter {
 
         if (token == null) {
             log.debug("토큰 없음 - URI: {}", request.getRequestURI());
+        }
+        else if (isBlacklisted(token)) {
+            log.debug("블랙리스트에 등록된 토큰 - URI:{}", request.getRequestURI());
         }
         else{
             Claims claims = jwtUtil.validateToken(token);
@@ -44,5 +49,9 @@ public class JwtFilter extends OncePerRequestFilter {
         }
 
         filterChain.doFilter(request, response);
+    }
+
+    private boolean isBlacklisted(String accessToken) {
+        return Boolean.TRUE.equals(redisTemplate.hasKey("blacklist:"+accessToken));
     }
 }
