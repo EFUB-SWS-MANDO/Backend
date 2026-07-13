@@ -1,6 +1,7 @@
 package com.example.sprout.domain.follow.repository;
 
 import com.example.sprout.domain.follow.entity.Follow;
+import com.example.sprout.domain.member.entity.Member;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -20,4 +21,8 @@ public interface FollowRepository extends JpaRepository<Follow, Long> {
             @Param("followerId") Long followerId,
             @Param("followeeId") Long followeeId
     );
+
+    @Modifying
+    @Query("DELETE FROM Follow f WHERE f.follower = :member OR f.followee = :member")
+    void deleteByFollowerOrFollowee(@Param("member") Member member);
 }

@@ -24,6 +24,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
 
+import java.time.LocalDateTime;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.*;
@@ -86,6 +87,8 @@ class CommentServiceUpdateTest {
                 .content("기존 댓글")
                 .build();
         ReflectionTestUtils.setField(comment, "id", commentId);
+        ReflectionTestUtils.setField(comment, "createdAt", LocalDateTime.now());
+        ReflectionTestUtils.setField(comment, "updatedAt", LocalDateTime.now());
 
         request = new UpdateCommentRequest("수정된 댓글");
     }

@@ -22,3 +22,7 @@ jwt:
   secret: ${JWT_SECRET:sprout-ci-test-default-secret-32bytes-minimum-length}
   access-expiration: 3600000
   refresh-expiration: 1209600000
+
+logging:
+  level:
+    com.example.sprout: debug

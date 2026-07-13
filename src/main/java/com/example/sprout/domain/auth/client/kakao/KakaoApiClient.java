@@ -1,6 +1,6 @@
 package com.example.sprout.domain.auth.client.kakao;
 
-import com.example.sprout.domain.auth.AuthErrorCode;
+import com.example.sprout.domain.auth.exception.AuthErrorCode;
 import com.example.sprout.domain.auth.client.OauthApiClient;
 import com.example.sprout.domain.auth.client.OauthUserInfo;
 import com.example.sprout.domain.member.enums.OauthProvider;
