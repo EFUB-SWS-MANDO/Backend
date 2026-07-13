@@ -1,5 +1,6 @@
 package com.example.sprout.domain.category.service;
 
+import com.example.sprout.domain.category.dto.CategoryDto;
 import com.example.sprout.domain.category.entity.Category;
 import com.example.sprout.domain.category.repository.CategoryRepository;
 import com.example.sprout.support.IntegrationTestSupport;
@@ -40,11 +41,11 @@ public class CategoryServiceTest extends IntegrationTestSupport {
     @DisplayName("첫 조회 - DB 조회, 두 번째 조회 - 캐시 조회")
     void getCategories() {
         // when
-        List<String> first = categoryService.getCategories();
-        List<String> second = categoryService.getCategories();
+        CategoryDto first = categoryService.getCategories();
+        CategoryDto second = categoryService.getCategories();
 
         // then
-        assertThat(first).containsExactly("COLLABORATION");
+        assertThat(first.categories()).containsExactly("COLLABORATION");
         assertThat(second).isEqualTo(first);
         verify(categoryRepository, times(1)).findAll();
     }

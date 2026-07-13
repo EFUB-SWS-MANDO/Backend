@@ -1,5 +1,6 @@
 package com.example.sprout.global.config;
 
+import com.example.sprout.domain.category.dto.CategoryDto;
 import com.example.sprout.domain.template.dto.TemplateDto;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -8,12 +9,9 @@ import org.springframework.data.redis.cache.RedisCacheManager;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.serializer.*;
-import tools.jackson.databind.JavaType;
 import tools.jackson.databind.json.JsonMapper;
-import tools.jackson.databind.jsontype.BasicPolymorphicTypeValidator;
 
 import java.time.Duration;
-import java.util.List;
 
 @Configuration
 public class RedisConfig {
@@ -37,11 +35,8 @@ public class RedisConfig {
         JacksonJsonRedisSerializer<TemplateDto> templateSerializer =
                 new JacksonJsonRedisSerializer<>(objectMapper, TemplateDto.class);
 
-        JavaType stringListType = objectMapper.getTypeFactory()
-                .constructCollectionType(List.class, String.class);
-        JacksonJsonRedisSerializer<List<String>> categoriesSerializer =
-                new JacksonJsonRedisSerializer<>(objectMapper, stringListType);
-
+        JacksonJsonRedisSerializer<CategoryDto> categoriesSerializer =
+                new JacksonJsonRedisSerializer<>(objectMapper, CategoryDto.class);
 
         RedisCacheConfiguration config = RedisCacheConfiguration.defaultCacheConfig()
                 .disableCachingNullValues()
