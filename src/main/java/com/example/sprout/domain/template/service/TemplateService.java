@@ -26,7 +26,7 @@ public class TemplateService {
     private final TemplateValueRepository  templateValueRepository;
 
     @Cacheable(
-            key = "#type",
+            key = "#type.name()",
             value = "templates"
     )
     public TemplateDto getTemplate(TemplateType type) {

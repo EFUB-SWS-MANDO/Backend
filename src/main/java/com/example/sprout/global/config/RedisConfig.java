@@ -1,16 +1,19 @@
 package com.example.sprout.global.config;
 
+import com.example.sprout.domain.template.dto.TemplateDto;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.redis.cache.RedisCacheConfiguration;
 import org.springframework.data.redis.cache.RedisCacheManager;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.data.redis.serializer.GenericJacksonJsonRedisSerializer;
-import org.springframework.data.redis.serializer.RedisSerializationContext;
-import org.springframework.data.redis.serializer.RedisSerializer;
-import org.springframework.data.redis.serializer.StringRedisSerializer;
+import org.springframework.data.redis.serializer.*;
+import tools.jackson.databind.JavaType;
+import tools.jackson.databind.json.JsonMapper;
+import tools.jackson.databind.jsontype.BasicPolymorphicTypeValidator;
+
 import java.time.Duration;
+import java.util.List;
 
 @Configuration
 public class RedisConfig {
@@ -29,18 +32,36 @@ public class RedisConfig {
     @Bean
     public RedisCacheManager redisCacheManager (RedisConnectionFactory connectionFactory) {
 
-        GenericJacksonJsonRedisSerializer jsonSerializer = GenericJacksonJsonRedisSerializer.builder().build();
+        JsonMapper objectMapper = JsonMapper.builder().build();
+
+        JacksonJsonRedisSerializer<TemplateDto> templateSerializer =
+                new JacksonJsonRedisSerializer<>(objectMapper, TemplateDto.class);
+
+        JavaType stringListType = objectMapper.getTypeFactory()
+                .constructCollectionType(List.class, String.class);
+        JacksonJsonRedisSerializer<List<String>> categoriesSerializer =
+                new JacksonJsonRedisSerializer<>(objectMapper, stringListType);
+
 
         RedisCacheConfiguration config = RedisCacheConfiguration.defaultCacheConfig()
                 .disableCachingNullValues()
-                .serializeKeysWith(RedisSerializationContext.SerializationPair.fromSerializer(RedisSerializer.string()))
-                .serializeValuesWith(RedisSerializationContext.SerializationPair.fromSerializer(jsonSerializer));
+                .serializeKeysWith(RedisSerializationContext.SerializationPair.fromSerializer(RedisSerializer.string()));
 
         return RedisCacheManager.builder(connectionFactory)
-                .cacheDefaults(config)
+                .cacheDefaults(config.serializeValuesWith(
+                        RedisSerializationContext.SerializationPair.fromSerializer(
+                                GenericJacksonJsonRedisSerializer.builder().build()
+                        )
+                ))
+                .withCacheConfiguration(
+                        "templates",
+                        config.entryTtl(Duration.ofDays(7))
+                                .serializeValuesWith(RedisSerializationContext.SerializationPair.fromSerializer(templateSerializer))
+                )
                 .withCacheConfiguration(
                         "categories",
                         config.entryTtl(Duration.ofDays(7))
+                                .serializeValuesWith(RedisSerializationContext.SerializationPair.fromSerializer(categoriesSerializer))
                 )
                 .build();
     }
