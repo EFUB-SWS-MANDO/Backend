@@ -21,6 +21,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
 
+import java.time.LocalDateTime;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -76,6 +77,8 @@ class CommentServiceDeleteTest {
                 .build();
 
         ReflectionTestUtils.setField(comment, "id", commentId);
+        ReflectionTestUtils.setField(comment, "createdAt", LocalDateTime.now());
+        ReflectionTestUtils.setField(comment, "updatedAt", LocalDateTime.now());
     }
 
     @Nested
