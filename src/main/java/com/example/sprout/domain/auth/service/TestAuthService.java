@@ -22,8 +22,6 @@ public class TestAuthService {
     private final MemberRepository memberRepository;
     private  final JwtUtil jwtUtil;
 
-    int testMemberCount = 1;
-
     @Transactional
     public String getTestTokenByMemberId(Long memberId) {
         if(!memberRepository.existsById(memberId)) {
@@ -37,11 +35,10 @@ public class TestAuthService {
     @Transactional
     public Long createTestMember() {
         Member testMember = Member.builder()
-                .oauthId("testMember"+testMemberCount)
+                .oauthId("testMember"+System.currentTimeMillis())
                 .oauthProvider(OauthProvider.KAKAO)
                 .build();
         memberRepository.save(testMember);
-        testMemberCount++;
 
         return testMember.getId();
     }
@@ -49,7 +46,7 @@ public class TestAuthService {
     @Transactional
     public TestTokenResponse getTestTokenAndMember() {
         Long testMemberId = createTestMember();
-        String testAccessToken = getTestTokenByMemberId(testMemberId);
+        String testAccessToken = jwtUtil.createAccessToken(testMemberId);
 
         return new TestTokenResponse(testMemberId, testAccessToken);
     }
