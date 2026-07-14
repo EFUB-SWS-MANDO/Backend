@@ -57,7 +57,7 @@ public class MemberService {
         authService.signOut(memberId,request);
     }
 
-    public Member getMemberById(Long memberId) {
+    private Member getMemberById(Long memberId) {
         return memberRepository.findById(memberId)
                 .orElseThrow(() -> {
                     log.debug("존재하지 않는 회원 - memberId: {}", memberId);

@@ -1,6 +1,8 @@
 package com.example.sprout.domain.profile.service;
 
 import com.example.sprout.domain.member.entity.Member;
+import com.example.sprout.domain.member.exception.MemberErrorCode;
+import com.example.sprout.domain.member.repository.MemberRepository;
 import com.example.sprout.domain.member.service.MemberService;
 import com.example.sprout.domain.profile.dto.request.CreateProfileRequest;
 import com.example.sprout.domain.profile.dto.response.CreateProfileResponse;
@@ -19,12 +21,12 @@ import org.springframework.transaction.annotation.Transactional;
 public class ProfileService {
 
     private final ProfileRepository profileRepository;
-    private final MemberService memberService;
+    private final MemberRepository memberRepository;
 
     @Transactional
     public CreateProfileResponse createProfile(Long memberId, CreateProfileRequest request) {
 
-        Member member = memberService.getMemberById(memberId);
+        Member member = getMemberById(memberId);
 
         if (profileRepository.existsByMember(member)) {
             log.debug("profile이 이미 존재 - memberId: {}", memberId);
@@ -42,5 +44,13 @@ public class ProfileService {
     @Transactional
     public void deleteByMember(Member member) {
         profileRepository.deleteByMember(member);
+    }
+
+    private Member getMemberById(Long memberId) {
+        return memberRepository.findById(memberId)
+                .orElseThrow(() -> {
+                    log.debug("존재하지 않는 회원 - memberId: {}", memberId);
+                    return new BusinessException(MemberErrorCode.MEMBER_NOT_FOUND);
+                });
     }
 }
