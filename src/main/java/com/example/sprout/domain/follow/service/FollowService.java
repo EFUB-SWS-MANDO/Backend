@@ -51,6 +51,12 @@ public class FollowService {
 
     }
 
+    //회원 탈퇴 시 팔로잉/팔로우 삭제
+    @Transactional
+    public void deleteFollowByMember(Member member) {
+        followRepository.deleteByFollowerOrFollowee(member);
+    }
+
     // === Helper method ===
     private Member getMember(Long memberId) {
         return memberRepository.findById(memberId)
