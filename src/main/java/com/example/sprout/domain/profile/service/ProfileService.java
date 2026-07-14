@@ -44,14 +44,13 @@ public class ProfileService {
     }
 
     @Transactional(readOnly = true)
-    public ProfileResponse getProfile(Long requesterId, Long memberId) {
-        Member member = getMemberById(memberId);
-        Member requester = getMemberById(requesterId);
+    public ProfileResponse getProfile(Long requesterId, Long targetMemberId) {
+        Member targetMember = getMemberById(targetMemberId);
 
-        Profile profile = findProfileByMember(member);
-        int followerCount = followRepository.countByFollowee(member);
-        int followeeCount = followRepository.countByFollower(member);
-        boolean isMe = member.equals(requester);
+        Profile profile = findProfileByMember(targetMember);
+        int followerCount = followRepository.countByFollowee(targetMember);
+        int followeeCount = followRepository.countByFollower(targetMember);
+        boolean isMe = targetMember.getId().equals(requesterId);
 
         return ProfileResponse.of(profile, followerCount, followeeCount, isMe);
     }
