@@ -159,8 +159,8 @@ public class ProfileServiceTest {
         @DisplayName("프로필 조회 성공 - isMe = false")
         void getProfile_Others_Success() {
             //given
-            given(memberRepository.findById(memberId)).willReturn(member);
-            given(memberRepository.findById(requesterId)).willReturn(requester);
+            given(memberRepository.findById(memberId)).willReturn(Optional.of(member));
+            given(memberRepository.findById(requesterId)).willReturn(Optional.of(requester));
             given(profileRepository.findByMember(member)).willReturn(Optional.of(profile));
             given(followRepository.countByFollowee(member)).willReturn(10);
             given(followRepository.countByFollower(member)).willReturn(5);
@@ -178,7 +178,7 @@ public class ProfileServiceTest {
         @DisplayName("프로필 조회 성공 - isMe = true")
         void getProfile_Me_Success() {
             //given
-            given(memberRepository.findById(memberId)).willReturn(member);
+            given(memberRepository.findById(memberId)).willReturn(Optional.of(member));
             given(profileRepository.findByMember(member)).willReturn(Optional.of(profile));
             given(followRepository.countByFollower(member)).willReturn(0);
             given(followRepository.countByFollowee(member)).willReturn(0);
@@ -194,8 +194,8 @@ public class ProfileServiceTest {
         @DisplayName("존재하지 않는 프로필 조회 시 실패")
         void getProfile_ProfileNotFound_Fail() {
             //given
-            given(memberRepository.findById(memberId)).willReturn(member);
-            given(memberRepository.findById(requesterId)).willReturn(requester);
+            given(memberRepository.findById(memberId)).willReturn(Optional.of(member));
+            given(memberRepository.findById(requesterId)).willReturn(Optional.of(requester));
             given(profileRepository.findByMember(member)).willReturn(Optional.empty());
             //when & then
             BusinessException exception = assertThrows(
