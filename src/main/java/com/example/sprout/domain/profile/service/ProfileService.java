@@ -1,11 +1,12 @@
 package com.example.sprout.domain.profile.service;
 
+import com.example.sprout.domain.follow.repository.FollowRepository;
 import com.example.sprout.domain.member.entity.Member;
 import com.example.sprout.domain.member.exception.MemberErrorCode;
 import com.example.sprout.domain.member.repository.MemberRepository;
-import com.example.sprout.domain.member.service.MemberService;
 import com.example.sprout.domain.profile.dto.request.CreateProfileRequest;
 import com.example.sprout.domain.profile.dto.response.CreateProfileResponse;
+import com.example.sprout.domain.profile.dto.response.ProfileResponse;
 import com.example.sprout.domain.profile.entity.Profile;
 import com.example.sprout.domain.profile.exception.ProfileErrorCode;
 import com.example.sprout.domain.profile.repository.ProfileRepository;
@@ -22,6 +23,7 @@ public class ProfileService {
 
     private final ProfileRepository profileRepository;
     private final MemberRepository memberRepository;
+    private final FollowRepository followRepository;
 
     @Transactional
     public CreateProfileResponse createProfile(Long memberId, CreateProfileRequest request) {
@@ -41,9 +43,27 @@ public class ProfileService {
         return new CreateProfileResponse(newProfile.getId());
     }
 
+    @Transactional(readOnly = true)
+    public ProfileResponse getProfile(Long requesterId, Long targetMemberId) {
+        Member targetMember = getMemberById(targetMemberId);
+
+        Profile profile = findProfileByMember(targetMember);
+        int followerCount = followRepository.countByFollowee(targetMember);
+        int followeeCount = followRepository.countByFollower(targetMember);
+        boolean isMe = targetMember.getId().equals(requesterId);
+
+        return ProfileResponse.of(profile, followerCount, followeeCount, isMe);
+    }
+
     @Transactional
     public void deleteByMember(Member member) {
         profileRepository.deleteByMember(member);
+    }
+
+    //헬퍼 메소드
+    public Profile findProfileByMember(Member member) {
+        return profileRepository.findByMember(member)
+                .orElseThrow(() -> new BusinessException(ProfileErrorCode.PROFILE_NOT_FOUND));
     }
 
     private Member getMemberById(Long memberId) {
