@@ -54,7 +54,7 @@ public class ProfileServiceTest {
     @DisplayName("프로필 생성 성공")
     void  createProfile_Success() {
         //given
-        given(memberService.findMemberById(memberId)).willReturn(member);
+        given(memberService.getMemberById(memberId)).willReturn(member);
         //아직 프로필 생성X
         given(profileRepository.existsByMember(member)).willReturn(false);
         given(profileRepository.save(any(Profile.class)))
@@ -75,7 +75,7 @@ public class ProfileServiceTest {
         assertThat(savedProfile.getProfileImage()).isEqualTo(request.profileImage());
         assertThat(savedProfile.getBio()).isEqualTo(request.bio());
 
-        verify(memberService).findMemberById(memberId);
+        verify(memberService).getMemberById(memberId);
         verify(profileRepository).existsByMember(member);
     }
 
@@ -83,7 +83,7 @@ public class ProfileServiceTest {
     @DisplayName("이미 프로필이 존재하는 회원이 프로필 생성 시도 시 실패")
     void createProfile_AlreadyExists_Fail() {
         //given
-        given(memberService.findMemberById(memberId)).willReturn(member);
+        given(memberService.getMemberById(memberId)).willReturn(member);
         given(profileRepository.existsByMember(member)).willReturn(true);
 
         //when & then
@@ -99,7 +99,7 @@ public class ProfileServiceTest {
     @DisplayName("존재하지 않는 회원이 프로필 생성 시도 시 실패")
     void createProfile_MemberNotFound_Fail() {
         //given
-        given(memberService.findMemberById(memberId))
+        given(memberService.getMemberById(memberId))
                 .willThrow(new BusinessException(MemberErrorCode.MEMBER_NOT_FOUND));
 
         //when & then
