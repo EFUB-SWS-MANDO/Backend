@@ -1,5 +1,7 @@
 package com.example.sprout.domain.profile.dto.request;
 
+import com.example.sprout.domain.member.entity.Member;
+import com.example.sprout.domain.profile.entity.Profile;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import lombok.Builder;
@@ -12,4 +14,13 @@ public record CreateProfileRequest(
         String profileImage,
         @Size(max=150, message = "자기소개는 150자 이하입니다.")
         String bio
-) {}
+) {
+        public Profile toEntity(Member member) {
+                return Profile.builder()
+                        .member(member)
+                        .nickname(nickname)
+                        .profileImage(profileImage)
+                        .bio(bio)
+                        .build();
+        }
+}
