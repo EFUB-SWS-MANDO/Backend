@@ -39,4 +39,8 @@ public class ProfileService {
         return new CreateProfileResponse(newProfile.getId());
     }
 
+    @Transactional
+    public void deleteByMember(Member member) {
+        profileRepository.deleteByMember(member);
+    }
 }

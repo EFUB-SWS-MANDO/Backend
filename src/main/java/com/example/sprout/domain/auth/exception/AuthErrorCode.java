@@ -1,4 +1,4 @@
-package com.example.sprout.domain.auth;
+package com.example.sprout.domain.auth.exception;
 
 import com.example.sprout.global.error.ErrorCode;
 import lombok.Getter;
