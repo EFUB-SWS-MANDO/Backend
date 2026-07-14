@@ -147,7 +147,7 @@ public class ProfileServiceTest {
             ReflectionTestUtils.setField(requester,"id", requesterId);
 
             profile = Profile.builder()
-                    .member(requester)
+                    .member(member)
                     .nickname("nickname")
                     .profileImage("profile.png")
                     .bio("bio")
@@ -160,7 +160,6 @@ public class ProfileServiceTest {
         void getProfile_Others_Success() {
             //given
             given(memberRepository.findById(memberId)).willReturn(Optional.of(member));
-            given(memberRepository.findById(requesterId)).willReturn(Optional.of(requester));
             given(profileRepository.findByMember(member)).willReturn(Optional.of(profile));
             given(followRepository.countByFollowee(member)).willReturn(10);
             given(followRepository.countByFollower(member)).willReturn(5);
@@ -168,11 +167,11 @@ public class ProfileServiceTest {
             ProfileResponse response = profileService.getProfile(requesterId, memberId);
             //then
             assertThat(response).isNotNull();
+            assertThat(response.memberId()).isEqualTo(memberId);
             assertThat(response.followerCount()).isEqualTo(10);
             assertThat(response.followeeCount()).isEqualTo(5);
             assertThat(response.isMe()).isFalse();
             verify(memberRepository).findById(memberId);
-            verify(memberRepository).findById(requesterId);
         }
         @Test
         @DisplayName("프로필 조회 성공 - isMe = true")
@@ -187,6 +186,7 @@ public class ProfileServiceTest {
             ProfileResponse response = profileService.getProfile(memberId, memberId);
 
             //then
+            assertThat(response.memberId()).isEqualTo(memberId);
             assertThat(response.isMe()).isTrue();
         }
 
@@ -195,7 +195,6 @@ public class ProfileServiceTest {
         void getProfile_ProfileNotFound_Fail() {
             //given
             given(memberRepository.findById(memberId)).willReturn(Optional.of(member));
-            given(memberRepository.findById(requesterId)).willReturn(Optional.of(requester));
             given(profileRepository.findByMember(member)).willReturn(Optional.empty());
             //when & then
             BusinessException exception = assertThrows(
