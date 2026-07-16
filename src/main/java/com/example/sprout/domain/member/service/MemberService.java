@@ -37,7 +37,7 @@ public class MemberService {
     @Transactional
     public void deleteMember(Long memberId, HttpServletRequest request) {
 
-        Member member = findById(memberId);
+        Member member = getMemberById(memberId);
 
         //Member를 가지는 자식 엔티티 우선 삭제
         //Profile -> Comment -> PostLike -> Post -> Resume -> Interview -> Follow
@@ -57,7 +57,7 @@ public class MemberService {
         authService.signOut(memberId,request);
     }
 
-    private Member findById(Long memberId) {
+    private Member getMemberById(Long memberId) {
         return memberRepository.findById(memberId)
                 .orElseThrow(() -> {
                     log.debug("존재하지 않는 회원 - memberId: {}", memberId);
