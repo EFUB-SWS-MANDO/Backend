@@ -20,7 +20,7 @@ import static org.mockito.Mockito.*;
 
 public class CategoryServiceTest extends IntegrationTestSupport {
 
-   @Autowired
+    @Autowired
     private CategoryService categoryService;
 
     @MockitoSpyBean
