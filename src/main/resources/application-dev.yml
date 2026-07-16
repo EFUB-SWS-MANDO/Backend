@@ -23,6 +23,12 @@ jwt:
   access-expiration: 3600000
   refresh-expiration: 1209600000
 
-logging:
-  level:
-    com.example.sprout: debug
+ai:
+  openai:
+    api-key: ${OPENAI_API_KEY}
+    base-url: https://api.openai.com/v1
+    model: gpt-5-mini
+    default-max-token: 2000
+    timeout:
+      connect: 5s
+      read: 60s
