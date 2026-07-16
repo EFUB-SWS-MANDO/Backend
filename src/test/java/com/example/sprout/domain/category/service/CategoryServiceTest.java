@@ -8,11 +8,14 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 
+import java.time.Duration;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.awaitility.Awaitility.await;
 import static org.mockito.Mockito.*;
 
 public class CategoryServiceTest extends IntegrationTestSupport {
@@ -22,6 +25,9 @@ public class CategoryServiceTest extends IntegrationTestSupport {
 
     @MockitoSpyBean
     private CategoryRepository categoryRepository;
+
+    @Autowired
+    private RedisTemplate<String, String> redisTemplate;
 
     @BeforeEach
     void setUp() {
@@ -42,6 +48,15 @@ public class CategoryServiceTest extends IntegrationTestSupport {
     void getCategories() {
         // when
         CategoryDto first = categoryService.getCategories();
+
+        await()
+                .atMost(Duration.ofSeconds(2))
+                .pollInterval(Duration.ofMillis(20))
+                .untilAsserted(() -> {
+                    Boolean hasKey = redisTemplate.hasKey("categories::all");
+                    assertThat(hasKey).isTrue();
+                });
+
         CategoryDto second = categoryService.getCategories();
 
         // then

@@ -19,7 +19,7 @@ public class CategoryService {
 
     private final CategoryRepository categoryRepository;
 
-    @Cacheable(value = "categories")
+    @Cacheable(value = "categories", key = "'all'")
     public CategoryDto getCategories() {
         log.info("[Cache Miss] 카테고리 목록 DB 조회");
         return CategoryDto.of(

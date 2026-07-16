@@ -11,11 +11,14 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 
+import java.time.Duration;
 import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.awaitility.Awaitility.await;
 import static org.mockito.Mockito.*;
 
 public class TemplateServiceTest extends IntegrationTestSupport {
@@ -28,6 +31,9 @@ public class TemplateServiceTest extends IntegrationTestSupport {
 
     @MockitoSpyBean
     private TemplateRepository templateRepository;
+
+    @Autowired
+    private RedisTemplate<String, String> redisTemplate;
 
     Template template;
 
@@ -58,6 +64,15 @@ public class TemplateServiceTest extends IntegrationTestSupport {
     void getTemplate() {
         // when
         TemplateDto first = templateService.getTemplate(TemplateType.BASIC);
+
+        await()
+                .atMost(Duration.ofSeconds(2))
+                .pollInterval(Duration.ofMillis(20))
+                .untilAsserted(() -> {
+                    Boolean hasKey = redisTemplate.hasKey("templates::BASIC");
+                    assertThat(hasKey).isTrue();
+                });
+
         TemplateDto second = templateService.getTemplate(TemplateType.BASIC);
 
         // then
