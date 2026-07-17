@@ -1,4 +1,4 @@
-package com.example.sprout.follow;
+package com.example.sprout.domain.follow.service;
 
 import com.example.sprout.domain.follow.dto.response.FollowCreateResponse;
 import com.example.sprout.domain.follow.entity.Follow;
@@ -9,7 +9,6 @@ import com.example.sprout.domain.member.entity.Member;
 import com.example.sprout.domain.member.exception.MemberErrorCode;
 import com.example.sprout.domain.member.repository.MemberRepository;
 import com.example.sprout.global.error.BusinessException;
-import com.example.sprout.global.error.GlobalErrorCode;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -19,8 +18,6 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.test.util.ReflectionTestUtils;
-
-import java.util.Optional;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;

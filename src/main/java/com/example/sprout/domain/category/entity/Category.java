@@ -1,6 +1,5 @@
 package com.example.sprout.domain.category.entity;
 
-import com.example.sprout.domain.category.enums.CategoryType;
 import com.example.sprout.global.common.entity.BaseTimeEntity;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
@@ -19,12 +18,11 @@ public class Category extends BaseTimeEntity {
     @Column(name = "id")
     private Long id;
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "type", nullable = false)
-    private CategoryType type;
+    @Column(name = "type", nullable = false,  unique = true)
+    private String type;
 
     @Builder
-    public Category(CategoryType type) {
+    public Category(String type) {
         this.type = type;
     }
 
