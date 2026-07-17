@@ -1,6 +1,7 @@
 package com.example.sprout.global.config;
 
 import com.example.sprout.domain.category.dto.CategoryDto;
+import com.example.sprout.domain.template.dto.TemplateDto;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.redis.cache.RedisCacheConfiguration;
@@ -31,6 +32,9 @@ public class RedisConfig {
 
         JsonMapper objectMapper = JsonMapper.builder().build();
 
+        JacksonJsonRedisSerializer<TemplateDto> templateSerializer =
+                new JacksonJsonRedisSerializer<>(objectMapper, TemplateDto.class);
+
         JacksonJsonRedisSerializer<CategoryDto> categoriesSerializer =
                 new JacksonJsonRedisSerializer<>(objectMapper, CategoryDto.class);
 
@@ -44,6 +48,11 @@ public class RedisConfig {
                                 GenericJacksonJsonRedisSerializer.builder().build()
                         )
                 ))
+                .withCacheConfiguration(
+                        "templates",
+                        config.entryTtl(Duration.ofDays(7))
+                                .serializeValuesWith(RedisSerializationContext.SerializationPair.fromSerializer(templateSerializer))
+                )
                 .withCacheConfiguration(
                         "categories",
                         config.entryTtl(Duration.ofDays(7))
