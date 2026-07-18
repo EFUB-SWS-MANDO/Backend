@@ -1,5 +1,6 @@
 package com.example.sprout.domain.interview.service;
 
+import com.example.sprout.domain.interview.dto.InterviewFeedbackResponse;
 import com.example.sprout.domain.interview.entity.InterviewSession;
 import com.example.sprout.domain.interview.exception.InterviewErrorCode;
 import com.example.sprout.domain.interview.repository.InterviewAnswerRepository;
@@ -37,6 +38,101 @@ public class InterviewSessionServiceTest {
     @InjectMocks
     private InterviewSessionService interviewSessionService;
 
+
+    @Nested
+    @DisplayName("모의면접 총평 조회")
+    class getFeedback {
+
+        @Test
+        @DisplayName("본인 소유 세션이면 총평 조회 성공")
+        void getFeedback_success() {
+            // given
+            Long requesterId = 1L;
+            Member requester = mock(Member.class);
+            given(requester.getId()).willReturn(requesterId);
+
+            Long interviewSessionId = 10L;
+            String feedback = "모의면접 총평";
+            String feedbackSummary = "모의면접 총평 요약";
+            InterviewSession interviewSession = mock(InterviewSession.class);
+            given(interviewSession.getMember()).willReturn(requester);
+            given(interviewSession.getFeedback()).willReturn(feedback);
+            given(interviewSession.getFeedbackSummary()).willReturn(feedbackSummary);
+            given(interviewSession.hasFeedback()).willReturn(true);
+
+            given(interviewSessionRepository.findById(interviewSessionId)).willReturn(Optional.of(interviewSession));
+
+            // when
+            InterviewFeedbackResponse response = interviewSessionService.getFeedback(requesterId, interviewSessionId);
+
+            // then
+            verify(interviewSessionRepository).findById(interviewSessionId);
+            assertThat(response).isInstanceOf(InterviewFeedbackResponse.class);
+            assertThat(response.feedback()).isEqualTo(feedback);
+            assertThat(response.feedbackSummary()).isEqualTo(feedbackSummary);
+        }
+
+        @Test
+        @DisplayName("존재하지 않는 세션이면 INTERVIEW_NOT_FOUND 예외")
+        void getFeedback_sessionNotFound() {
+            // given
+            Long requesterId = 1L;
+            Long nonExistentInterviewSessionId = 10L;
+
+            given(interviewSessionRepository.findById(nonExistentInterviewSessionId)).willReturn(Optional.empty());
+
+            // when & then
+            assertThatThrownBy(() -> interviewSessionService.getFeedback(requesterId, nonExistentInterviewSessionId))
+                    .isInstanceOf(BusinessException.class)
+                    .satisfies(e -> assertThat(((BusinessException) e).getErrorCode())
+                            .isEqualTo(InterviewErrorCode.INTERVIEW_NOT_FOUND));
+        }
+
+        @Test
+        @DisplayName("본인 소유의 세션이 아니면 INTERVIEW_ACCESS_DENIED 예외")
+        void getFeedback_NotOwner() {
+            // given
+            Long requesterId = 1L;
+
+            Long otherMemberId = 2L;
+            Member otherMember = mock(Member.class);
+            given(otherMember.getId()).willReturn(otherMemberId);
+
+            Long interviewSessionId = 10L;
+            InterviewSession interviewSession = mock(InterviewSession.class);
+            given(interviewSession.getMember()).willReturn(otherMember);
+
+            given(interviewSessionRepository.findById(interviewSessionId)).willReturn(Optional.of(interviewSession));
+
+            // when & then
+            assertThatThrownBy(() -> interviewSessionService.getFeedback(requesterId, interviewSessionId))
+                    .isInstanceOf(BusinessException.class)
+                    .satisfies(e -> assertThat(((BusinessException) e).getErrorCode())
+                            .isEqualTo(InterviewErrorCode.INTERVIEW_ACCESS_DENIED));
+        }
+
+        @Test
+        @DisplayName("총평이 존재하지 않으면 INTERVIEW_FEEDBACK_NOT_FOUND 예외")
+        void getFeedback_feedbackNotFound() {
+            // given
+            Long requesterId = 1L;
+            Member requester = mock(Member.class);
+            given(requester.getId()).willReturn(requesterId);
+
+            Long interviewSessionId = 10L;
+            InterviewSession interviewSession = mock(InterviewSession.class);
+            given(interviewSession.getMember()).willReturn(requester);
+            given(interviewSession.hasFeedback()).willReturn(false);
+
+            given(interviewSessionRepository.findById(interviewSessionId)).willReturn(Optional.of(interviewSession));
+
+            // when & then
+            assertThatThrownBy(() -> interviewSessionService.getFeedback(requesterId, interviewSessionId))
+                    .isInstanceOf(BusinessException.class)
+                    .satisfies(e -> assertThat(((BusinessException) e).getErrorCode())
+                            .isEqualTo(InterviewErrorCode.INTERVIEW_FEEDBACK_NOT_FOUND));
+        }
+    }
 
     @Nested
     @DisplayName("모의면접 단건 삭제")
