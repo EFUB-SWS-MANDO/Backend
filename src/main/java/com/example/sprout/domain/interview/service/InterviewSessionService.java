@@ -1,5 +1,6 @@
 package com.example.sprout.domain.interview.service;
 
+import com.example.sprout.domain.interview.dto.InterviewFeedbackResponse;
 import com.example.sprout.domain.interview.entity.InterviewSession;
 import com.example.sprout.domain.interview.exception.InterviewErrorCode;
 import com.example.sprout.domain.interview.repository.InterviewAnswerRepository;
@@ -25,14 +26,30 @@ public class InterviewSessionService {
     private final InterviewAnswerRepository interviewAnswerRepository;
     private final InterviewQuestionRepository interviewQuestionRepository;
 
+    // 모의면접 총평 조회
+    public InterviewFeedbackResponse getFeedback(Long requesterId, Long interviewSessionId) {
+        InterviewSession interviewSession = getInterviewSession(interviewSessionId);
+        validateOwnership(requesterId, interviewSession);
+        validateFeedbackExists(interviewSession);
+
+        log.info("모의면접 총평 조회 완료 - requesterId={}, interviewSessionId={}", requesterId, interviewSessionId);
+
+        return InterviewFeedbackResponse.from(interviewSession);
+    }
+
+    private void validateFeedbackExists(InterviewSession interviewSession) {
+        if(!interviewSession.hasFeedback()) {
+            throw new BusinessException(InterviewErrorCode.INTERVIEW_FEEDBACK_NOT_FOUND);
+        }
+    }
 
     // 모의면접 단건 삭제
     @Transactional
     @CacheEvict(value = "interviewSessions", key = "'member:' + #requesterId")
     public void deleteInterview(Long requesterId, Long interviewSessionId) {
-        InterviewSession interview = getInterviewSession(interviewSessionId);
-        validateOwnership(requesterId, interview);
-        deleteInterviewSession(interview);
+        InterviewSession interviewSession = getInterviewSession(interviewSessionId);
+        validateOwnership(requesterId, interviewSession);
+        deleteInterviewSession(interviewSession);
 
         log.info("모의면접 삭제 완료 - requesterId={}, interviewSessionId={}", requesterId, interviewSessionId);
     }
