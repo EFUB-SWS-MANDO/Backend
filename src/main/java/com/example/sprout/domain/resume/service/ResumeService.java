@@ -58,23 +58,11 @@ public class ResumeService {
 
         Map<Long, GeneratedAnswer> answerMap = generateAllAnswers(postSummary, request.questions());
 
-        for (CreateResumeRequest.QuestionDto q: request.questions()) {
-            GeneratedAnswer generated = answerMap.get(q.order());
-            if (generated == null) {
-                log.error("AI 응답에 order={} 문항 답변 누락", q.order());
-                throw new BusinessException(ResumeErrorCode.AI_ANSWER_MISSING);
-            }
+        List<ResumeDraft> drafts = request.questions().stream()
+                .map(q -> toResumeDraft(resume, q, getGeneratedAnswer(answerMap, q.order())))
+                .toList();
 
-            ResumeDraft draft = ResumeDraft.builder()
-                    .resume(resume)
-                    .orderIndex((q.order()))
-                    .question(q.content())
-                    .answer(generated.answer())
-                    .description(generated.description())
-                    .build();
-
-            resume.getResumeDraftList().add(draft);
-        }
+        resume.getResumeDraftList().addAll(drafts);
 
         Resume saved = resumeRepository.save(resume);
 
@@ -144,19 +132,31 @@ public class ResumeService {
         return parser.parse(response.content());
     }
 
+    private GeneratedAnswer getGeneratedAnswer(Map<Long, GeneratedAnswer> answerMap, Long order) {
+        GeneratedAnswer generated = answerMap.get(order);
+        if (generated == null) {
+            log.error("AI 응답에 order={} 문항 답변 누락", order);
+            throw new BusinessException(ResumeErrorCode.AI_ANSWER_MISSING);
+        }
+        return generated;
+    }
+
+    private ResumeDraft toResumeDraft(Resume resume, CreateResumeRequest.QuestionDto q, GeneratedAnswer generated) {
+        return ResumeDraft.builder()
+                .resume(resume)
+                .orderIndex(q.order())
+                .question(q.content())
+                .answer(generated.answer())
+                .description(generated.description())
+                .build();
+    }
+
     // 응답 형식 변경
     private ResumeResponse toResponse(Resume resume) {
         List<ResumeDetailItem> items = resume.getResumeDraftList().stream()
-                .map(d -> new ResumeDetailItem(
-                        d.getId(),
-                        d.getOrderIndex(),
-                        d.getQuestion(),
-                        d.getAnswer(),
-                        d.getDescription()
-                ))
-                .toList();
+                .map(ResumeDetailItem::from).toList();
 
-        return new ResumeResponse(resume.getId(), resume.getTitle(), resume.getCreatedAt(), items);
+        return ResumeResponse.of(resume, items);
     }
 
 }
