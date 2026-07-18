@@ -93,9 +93,12 @@ public class ResumeService {
 
         Pageable pageable = PageRequest.of(0, limit + 1);
         List<Resume> resumeList = resumeRepository.findPageByAuthorAndKeyword(author, idAfter, keyword, pageable);
+
         boolean hasNext = hasNextPage(resumeList, limit);
+
         List<Resume> pageResumeList = trimToPageSize(resumeList, limit, hasNext);
         List<ResumeListItem> pageResumeListItem = toResumeListItem(pageResumeList);
+
         Long nextIdAfter = resolveNextIdAfter(pageResumeList, hasNext, Resume::getId);
         Long totalElements = resumeRepository.countAllByAuthorAndKeyword(author, keyword);
 
@@ -168,24 +171,13 @@ public class ResumeService {
     // 응답 형식 변경
     private ResumeResponse toResponse(Resume resume) {
         List<ResumeDetailItem> items = resume.getResumeDraftList().stream()
-                .map(d -> new ResumeDetailItem(
-                        d.getId(),
-                        d.getOrderIndex(),
-                        d.getQuestion(),
-                        d.getAnswer(),
-                        d.getDescription()
-                ))
-                .toList();
+                .map(ResumeDetailItem::from).toList();
 
-        return new ResumeResponse(resume.getId(), resume.getTitle(), resume.getCreatedAt(), items);
+        return ResumeResponse.of(resume, items);
     }
 
     private List<ResumeListItem> toResumeListItem(List<Resume> resumes) {
         return resumes.stream()
-                .map(r -> new ResumeListItem(
-                        r.getId(),
-                        r.getTitle(),
-                        r.getCreatedAt()
-                )).toList();
+                .map(ResumeListItem::from).toList();
     }
 }
