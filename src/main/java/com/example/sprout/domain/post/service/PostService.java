@@ -9,9 +9,11 @@ import com.example.sprout.domain.member.entity.Member;
 import com.example.sprout.domain.member.exception.MemberErrorCode;
 import com.example.sprout.domain.member.repository.MemberRepository;
 import com.example.sprout.domain.post.dto.request.CreatePostRequest;
+import com.example.sprout.domain.post.dto.request.UpdatePostRequest;
 import com.example.sprout.domain.post.dto.response.PostDetailDto;
 import com.example.sprout.domain.post.entity.Post;
 import com.example.sprout.domain.post.exception.PostErrorCode;
+import com.example.sprout.domain.post.repository.PostCategoryRepository;
 import com.example.sprout.domain.post.repository.PostRepository;
 import com.example.sprout.domain.profile.entity.Profile;
 import com.example.sprout.domain.profile.exception.ProfileErrorCode;
@@ -49,21 +51,15 @@ public class PostService {
 
         }
         //카테고리 검증
-        List<String> types = request.categories().stream()
-                .distinct()
-                .toList();
-        List<Category> categories = categoryRepository.findAllByTypeIn(types);
-        if(categories.size() != types.size()) {
-            log.warn("게시글 생성 - 존재하지 않는 카테고리 ");
-            throw new BusinessException(CategoryErrorCode.CATEGORY_NOT_FOUND);
-        }
+        List<Category> categories = validateCategories(request.categories());
+
         //프로필 가져오기
         Profile authorProfile = getProfileByMember(author);
 
         //게시글 생성 및 저장
         Post newPost = request.toEntity(author);
         postRepository.save(newPost);
-        categories.forEach(category -> postCategoryService.assignPostCategory(newPost, category));
+        postCategoryService.assignPostCategories(newPost, categories);
 
         log.info("게시글 생성 성공 - postId: {}, authorId: {}, title: {}", newPost.getId(), authorId, newPost.getTitle());
         return PostDetailDto.of(newPost, authorProfile, true, false);
@@ -85,6 +81,36 @@ public class PostService {
         return PostDetailDto.of(post, authorProfile, isMine, isFollowing);
     }
 
+    //게시글 수정
+    @Transactional
+    public PostDetailDto updatePost(Long requesterId, Long postId, UpdatePostRequest request) {
+        Member requester = getMemberById(requesterId);
+
+        Post post = getPostById(postId);
+        Member author = post.getAuthor();
+
+        //수정 권한 확인
+        if (validateAuthor(requester, author)) {
+            log.warn("게시글 수정 권한 없음 - requesterId: {}, authorId: {}", requesterId, author.getId());
+            throw new BusinessException(PostErrorCode.POST_ACCESS_DENIED);
+        }
+        Profile authorProfile = getProfileByMember(author);
+
+        //TODO: 카테고리 미설정 시, AI API 사용해서 카테고리 분류하도록 메소드 호출 (분기 처리 필요)
+        if (request.categories().isEmpty()) {
+
+        }
+
+        List<Category> newCategories = validateCategories(request.categories());
+
+        //게시글 수정
+        post.updatePost(request.title(), request.content());
+        postCategoryService.updatePostCategories(post, newCategories);
+
+        log.info("게시글 수정 성공 - requesterId: {}, postId: {}, authorId: {}", requesterId, postId, author.getId());
+        return PostDetailDto.of(post, authorProfile, true, false);
+    }
+
     @Transactional
     public void deletePostByMember(Member member) {
         List<Post> postList = postRepository.findAllByAuthor(member);
@@ -101,7 +127,6 @@ public class PostService {
         //Post 삭제
         postRepository.delete(post);
     }
-
 
     //private 헬퍼 메소드
     private Member getMemberById(Long memberId) {
@@ -130,5 +155,21 @@ public class PostService {
 
     private boolean getIsFollowing(Member follower, Member followee) {
         return followRepository.existsByFollowerIdAndFolloweeId(follower.getId(), followee.getId());
+    }
+
+    private List<Category> validateCategories(List<String> rawTypes) {
+        List<String> types = rawTypes.stream().distinct().toList();
+        List<Category> categories = categoryRepository.findAllByTypeIn(types);
+
+        if (categories.size() != types.size()) {
+            log.warn("존재하지 않는 카테고리입니다.");
+            throw new BusinessException(CategoryErrorCode.CATEGORY_NOT_FOUND);
+        };
+
+        return categories;
+    }
+
+    private boolean validateAuthor(Member requester, Member author) {
+        return !requester.getId().equals(author.getId());
     }
 }
