@@ -9,8 +9,10 @@ import com.example.sprout.domain.member.entity.Member;
 import com.example.sprout.domain.member.exception.MemberErrorCode;
 import com.example.sprout.domain.member.repository.MemberRepository;
 import com.example.sprout.domain.post.dto.request.CreatePostRequest;
+import com.example.sprout.domain.post.dto.request.UpdatePostRequest;
 import com.example.sprout.domain.post.dto.response.PostDetailDto;
 import com.example.sprout.domain.post.entity.Post;
+import com.example.sprout.domain.post.entity.PostCategory;
 import com.example.sprout.domain.post.exception.PostErrorCode;
 import com.example.sprout.domain.post.repository.PostRepository;
 import com.example.sprout.domain.profile.entity.Profile;
@@ -374,6 +376,163 @@ class PostServiceTest {
             verify(memberRepository).findById(requesterId);
             verify(postRepository).findById(postId);
             verify(profileRepository).findByMember(author);
+        }
+    }
+
+    @Nested
+    @DisplayName("게시글 수정")
+    class updatePost {
+        Long requesterId;
+        Member requester;
+        Long postId;
+        Post post;
+        UpdatePostRequest request;
+
+        @BeforeEach
+        void setUp() {
+            requesterId = 2L;
+            requester = Member.builder().build();
+            ReflectionTestUtils.setField(requester, "id", requesterId);
+
+            postId = 1L;
+            post = Post.builder()
+                    .author(author)
+                    .title("title")
+                    .content("content")
+                    .build();
+            ReflectionTestUtils.setField(post, "id", postId);
+
+            request = new UpdatePostRequest("update_title", "update_content", List.of("CREATIVITY"));
+        }
+
+        @Test
+        @DisplayName("게시글 수정 성공")
+        void updatePost_Success() {
+            //given
+            given(memberRepository.findById(authorId)).willReturn(Optional.of(author));
+            given(postRepository.findById(postId)).willReturn(Optional.of(post));
+            given(profileRepository.findByMember(author)).willReturn(Optional.of(authorProfile));
+            given(categoryRepository.findAllByTypeIn(request.categories())).willReturn(List.of(new Category("PLANNING")));
+
+            //when
+            PostDetailDto response = postService.updatePost(authorId, postId, request);
+
+            //then
+            assertThat(response).isNotNull();
+
+            assertThat(response.author().memberId()).isEqualTo(author.getId());
+            assertThat(response.author().nickname()).isEqualTo(authorProfile.getNickname());
+            assertThat(response.author().profileImage()).isEqualTo(authorProfile.getProfileImage());
+            assertThat(response.author().isFollowing()).isFalse();
+
+            assertThat(response.title()).isEqualTo(request.title());
+            assertThat(response.content()).isEqualTo(request.content());
+            assertThat(response.isMine()).isTrue();
+
+            assertThat(post.getTitle()).isEqualTo("update_title");
+            assertThat(post.getContent()).isEqualTo("update_content");
+
+            verify(memberRepository).findById(authorId);
+            verify(postRepository).findById(postId);
+            verify(profileRepository).findByMember(author);
+        }
+
+        @Test
+        @DisplayName("존재하지 않는 회원이 게시글 수정 요청 시 실패")
+        void updatePost_MemberNotFound_Fail() {
+            //given
+            given(memberRepository.findById(authorId)).willReturn(Optional.empty());
+
+            //when
+            BusinessException exception = assertThrows(
+                    BusinessException.class,
+                    () -> postService.updatePost(authorId, postId, request)
+            );
+            assertThat(exception.getErrorCode()).isEqualTo(MemberErrorCode.MEMBER_NOT_FOUND);
+
+            verify(memberRepository).findById(authorId);
+            verifyNoInteractions(postRepository, profileRepository, categoryRepository);
+        }
+
+        @Test
+        @DisplayName("존재하지 않는 게시글 수정 요청 시 실패")
+        void updatePost_PostNotFound_Fail() {
+            //given
+            //given
+            given(memberRepository.findById(authorId)).willReturn(Optional.of(author));
+            given(postRepository.findById(postId)).willReturn(Optional.empty());
+
+            //when & then
+            BusinessException exception = assertThrows(
+                    BusinessException.class,
+                    () -> postService.updatePost(authorId, postId, request)
+            );
+            assertThat(exception.getErrorCode()).isEqualTo(PostErrorCode.POST_NOT_FOUND);
+
+            verify(memberRepository).findById(authorId);
+            verify(postRepository).findById(postId);
+            verifyNoInteractions(profileRepository, categoryRepository);
+        }
+
+        @Test
+        @DisplayName("프로필이 존재하지 않는 회원의 게시글 수정 요청 시 실패")
+        void updatePost_ProfileNotFound_Fail() {
+            //given
+            given(memberRepository.findById(authorId)).willReturn(Optional.of(author));
+            given(postRepository.findById(postId)).willReturn(Optional.of(post));
+            given(profileRepository.findByMember(author)).willReturn(Optional.empty());
+
+            //when
+            BusinessException exception = assertThrows(
+                    BusinessException.class,
+                    () -> postService.updatePost(authorId, postId, request)
+            );
+            assertThat(exception.getErrorCode()).isEqualTo(ProfileErrorCode.PROFILE_NOT_FOUND);
+
+            verify(memberRepository).findById(authorId);
+            verify(postRepository).findById(postId);
+            verify(profileRepository).findByMember(author);
+            verifyNoInteractions(categoryRepository);
+        }
+
+        @Test
+        @DisplayName("존재하지 않는 카테고리로 게시글 수정 요청 시 실패")
+        void updatePost_CategoryNotFound_Fail() {
+            //given
+            given(memberRepository.findById(authorId)).willReturn(Optional.of(author));
+            given(postRepository.findById(postId)).willReturn(Optional.of(post));
+            given(profileRepository.findByMember(author)).willReturn(Optional.of(authorProfile));
+            given(categoryRepository.findAllByTypeIn(request.categories())).willReturn(List.of());
+
+            //when & then
+            BusinessException exception = assertThrows(
+                    BusinessException.class,
+                    () -> postService.updatePost(authorId, postId, request)
+            );
+            assertThat(exception.getErrorCode()).isEqualTo(CategoryErrorCode.CATEGORY_NOT_FOUND);
+
+            verify(memberRepository).findById(authorId);
+            verify(postRepository).findById(postId);
+            verify(profileRepository).findByMember(author);
+            verify(categoryRepository).findAllByTypeIn(request.categories());
+        }
+
+        @Test
+        @DisplayName("작성자가 아닌 회원의 게시글 수정 요청 시 실패")
+        void updatePost_AccessDenied_Fail() {
+            //given
+            given(memberRepository.findById(requesterId)).willReturn(Optional.of(requester));
+            given(postRepository.findById(postId)).willReturn(Optional.of(post));
+
+            //when & then
+            BusinessException exception = assertThrows(
+                    BusinessException.class,
+                    () -> postService.updatePost(requesterId, postId, request)
+            );
+            assertThat(exception.getErrorCode()).isEqualTo(PostErrorCode.POST_ACCESS_DENIED);
+
+            verify(memberRepository).findById(requesterId);
+            verify(postRepository).findById(postId);
         }
     }
 
