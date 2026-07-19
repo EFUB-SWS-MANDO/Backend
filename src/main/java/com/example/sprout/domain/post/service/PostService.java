@@ -13,7 +13,6 @@ import com.example.sprout.domain.post.dto.request.UpdatePostRequest;
 import com.example.sprout.domain.post.dto.response.PostDetailDto;
 import com.example.sprout.domain.post.entity.Post;
 import com.example.sprout.domain.post.exception.PostErrorCode;
-import com.example.sprout.domain.post.repository.PostCategoryRepository;
 import com.example.sprout.domain.post.repository.PostRepository;
 import com.example.sprout.domain.profile.entity.Profile;
 import com.example.sprout.domain.profile.exception.ProfileErrorCode;
@@ -90,7 +89,7 @@ public class PostService {
         Member author = post.getAuthor();
 
         //수정 권한 확인
-        if (validateAuthor(requester, author)) {
+        if (!isAuthor(requester, author)) {
             log.warn("게시글 수정 권한 없음 - requesterId: {}, authorId: {}", requesterId, author.getId());
             throw new BusinessException(PostErrorCode.POST_ACCESS_DENIED);
         }
@@ -164,12 +163,12 @@ public class PostService {
         if (categories.size() != types.size()) {
             log.warn("존재하지 않는 카테고리입니다.");
             throw new BusinessException(CategoryErrorCode.CATEGORY_NOT_FOUND);
-        };
+        }
 
         return categories;
     }
 
-    private boolean validateAuthor(Member requester, Member author) {
-        return !requester.getId().equals(author.getId());
+    private boolean isAuthor(Member requester, Member author) {
+        return requester.getId().equals(author.getId());
     }
 }
