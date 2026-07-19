@@ -30,7 +30,7 @@ public class ResumeService {
         Member requester = getMember(requesterId);
         Resume resume = getResume(resumeId);
 
-        validateAuthor(requester, resume.getAuthor());
+        validateAuthor(requesterId, resume.getAuthor());
 
         resumeRepository.delete(resume);
         log.info("자소서 삭제 완료 - resumeId: {}, requesterId: {}", resumeId, requesterId);
@@ -67,8 +67,8 @@ public class ResumeService {
     }
 
     // Author == Requester
-    private void validateAuthor(Member requester, Member author) {
-        if (!requester.getId().equals(author.getId())) {
+    private void validateAuthor(Long requesterId, Member author) {
+        if (!requesterId.equals(author.getId())) {
             throw new BusinessException(ResumeErrorCode.RESUME_ACCESS_DENIED);
         }
     }
