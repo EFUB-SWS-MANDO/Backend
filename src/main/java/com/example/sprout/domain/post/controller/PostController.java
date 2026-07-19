@@ -2,6 +2,7 @@ package com.example.sprout.domain.post.controller;
 
 import com.example.sprout.domain.auth.security.AuthMember;
 import com.example.sprout.domain.post.dto.request.CreatePostRequest;
+import com.example.sprout.domain.post.dto.request.UpdatePostRequest;
 import com.example.sprout.domain.post.dto.response.PostDetailDto;
 import com.example.sprout.domain.post.service.PostService;
 import com.example.sprout.global.common.response.ApiResponse;
@@ -35,7 +36,16 @@ public class PostController {
         PostDetailDto response = postService.getPostDetail(requesterId, postId);
 
         return ResponseEntity.ok(ApiResponse.success("게시글 생성 성공", response));
+    }
 
+    @PatchMapping("/{postId}")
+    public ResponseEntity<ApiResponse<PostDetailDto>> updatePost(@AuthMember Long requesterId,
+                                                                 @PathVariable Long postId,
+                                                                 @Valid @RequestBody UpdatePostRequest request) {
 
+        log.info("게시글 수정 요청: requesterId: {}, postId: {}", requesterId, postId);
+        PostDetailDto response = postService.updatePost(requesterId, postId, request);
+
+        return ResponseEntity.ok(ApiResponse.success("게시글 수정 성공", response));
     }
 }
