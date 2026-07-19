@@ -120,7 +120,12 @@ class PostServiceTest {
             verify(memberRepository).findById(authorId);
             verify(categoryRepository).findAllByTypeIn(request.categories());
             verify(profileRepository).findByMember(author);
-            verify(postCategoryService, times(2)).assignPostCategory(eq(savedPost), any(Category.class));
+
+            ArgumentCaptor<List<Category>> categoryCaptor = ArgumentCaptor.forClass(List.class);
+            verify(postCategoryService).assignPostCategories(eq(savedPost), categoryCaptor.capture());
+            assertThat(categoryCaptor.getValue())
+                    .extracting(Category::getType)
+                    .containsExactly("LEADERSHIP", "COMMUNICATION");
 
         }
 
@@ -161,7 +166,7 @@ class PostServiceTest {
 
             verify(postRepository, never()).save(any(Post.class));
             verifyNoInteractions(profileRepository);
-            verify(postCategoryService, never()).assignPostCategory(any(),any());
+            verify(postCategoryService, never()).assignPostCategories(any(),any());
         }
 
         @Test

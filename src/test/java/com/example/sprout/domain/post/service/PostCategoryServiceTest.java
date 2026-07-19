@@ -15,6 +15,8 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
 
+import java.util.List;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
@@ -47,7 +49,7 @@ class PostCategoryServiceTest {
         @DisplayName("게시글에 할당 성공 ")
         void assignPostCategory_Success() {
             //when
-            postCategoryService.assignPostCategory(post, category);
+            postCategoryService.assignPostCategories(post, List.of(category));
 
             //then
             ArgumentCaptor<PostCategory> captor = ArgumentCaptor.forClass(PostCategory.class);
