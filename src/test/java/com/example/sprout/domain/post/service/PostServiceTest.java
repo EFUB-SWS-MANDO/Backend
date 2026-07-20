@@ -12,7 +12,6 @@ import com.example.sprout.domain.post.dto.request.CreatePostRequest;
 import com.example.sprout.domain.post.dto.request.UpdatePostRequest;
 import com.example.sprout.domain.post.dto.response.PostDetailDto;
 import com.example.sprout.domain.post.entity.Post;
-import com.example.sprout.domain.post.entity.PostCategory;
 import com.example.sprout.domain.post.exception.PostErrorCode;
 import com.example.sprout.domain.post.repository.PostRepository;
 import com.example.sprout.domain.profile.entity.Profile;
@@ -534,6 +533,108 @@ class PostServiceTest {
             verify(memberRepository).findById(requesterId);
             verify(postRepository).findById(postId);
         }
+    }
+
+    @Nested
+    @DisplayName("게시글 삭제")
+    class deletePost{
+        Long memberId;
+        Member member;
+        Long postId;
+        Post post;
+
+        @BeforeEach
+        void setUp() {
+            memberId = 2L;
+            member = Member.builder().build();
+            ReflectionTestUtils.setField(member, "id", memberId);
+
+            postId = 1L;
+            post = Post.builder()
+                    .author(author)
+                    .title("title")
+                    .content("content")
+                    .build();
+            ReflectionTestUtils.setField(post, "id", postId);
+        }
+
+        @Test
+        @DisplayName("게시글 삭제 성공")
+        void deletePost_Success() {
+            //given
+            given(memberRepository.findById(authorId)).willReturn(Optional.of(author));
+            given(postRepository.findById(postId)).willReturn(Optional.of(post));
+
+            //when
+            postService.deletePostWithChildren(authorId, postId);
+
+            //then: comment -> postLike -> postCategory -> post 순서대로 삭제
+            InOrder inOrder = inOrder(commentService, postLikeService, postCategoryService, postRepository);
+            inOrder.verify(commentService).deleteByPost(post);
+            inOrder.verify(postLikeService).deleteByPost(post);
+            inOrder.verify(postCategoryService).deleteByPost(post);
+            inOrder.verify(postRepository).delete(post);
+        }
+
+        @Test
+        @DisplayName("작성자가 아닌 회원이 게시글 삭제 요청 시 실패")
+        void deletePost_AccessDenied_Fail() {
+            //given
+            given(memberRepository.findById(memberId)).willReturn(Optional.of(member));
+            given(postRepository.findById(postId)).willReturn(Optional.of(post));
+
+            //when & then
+            BusinessException exception = assertThrows(
+                    BusinessException.class,
+                    () -> postService.deletePostWithChildren(memberId, postId)
+            );
+            assertThat(exception.getErrorCode()).isEqualTo(PostErrorCode.POST_ACCESS_DENIED);
+
+            verify(memberRepository).findById(memberId);
+            verify(postRepository).findById(postId);
+            verify(postRepository, never()).delete(any(Post.class));
+            verifyNoInteractions(commentService, postLikeService, postCategoryService);
+
+        }
+
+        @Test
+        @DisplayName("존재하지 않는 회원이 게시글 삭제 요청 시 실패")
+        void deletePost_MemberNotFound_Fail() {
+            //given
+            given(memberRepository.findById(memberId)).willReturn(Optional.empty());
+
+            //when & then
+            BusinessException exception = assertThrows(
+                    BusinessException.class,
+                    () -> postService.deletePostWithChildren(memberId, postId)
+            );
+            assertThat(exception.getErrorCode()).isEqualTo(MemberErrorCode.MEMBER_NOT_FOUND);
+
+            verify(memberRepository).findById(memberId);
+            verifyNoInteractions(postRepository, commentService, postLikeService, postCategoryService);
+        }
+
+        @Test
+        @DisplayName("존재하지 않는 게시글 삭제 요청 시 실패")
+        void deletePost_PostNotFound_Fail() {
+            //given
+            given(memberRepository.findById(memberId)).willReturn(Optional.of(member));
+            given(postRepository.findById(postId)).willReturn(Optional.empty());
+
+            //when & then
+            BusinessException exception = assertThrows(
+                    BusinessException.class,
+                    () -> postService.deletePostWithChildren(memberId, postId)
+            );
+            assertThat(exception.getErrorCode()).isEqualTo(PostErrorCode.POST_NOT_FOUND);
+
+            verify(memberRepository).findById(memberId);
+            verify(postRepository).findById(postId);
+            verify(postRepository, never()).delete(any(Post.class));
+            verifyNoInteractions(commentService, postLikeService, postCategoryService);
+
+        }
+
     }
 
     @Nested
