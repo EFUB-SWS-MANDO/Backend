@@ -1,6 +1,7 @@
 package com.example.sprout.domain.interview.service;
 
-import com.example.sprout.domain.interview.dto.InterviewFeedbackResponse;
+import com.example.sprout.domain.interview.dto.response.InterviewFeedbackResponse;
+import com.example.sprout.domain.interview.dto.response.InterviewSessionCursorResponse;
 import com.example.sprout.domain.interview.entity.InterviewSession;
 import com.example.sprout.domain.interview.exception.InterviewErrorCode;
 import com.example.sprout.domain.interview.repository.InterviewAnswerRepository;
@@ -8,7 +9,6 @@ import com.example.sprout.domain.interview.repository.InterviewQuestionRepositor
 import com.example.sprout.domain.interview.repository.InterviewSessionRepository;
 import com.example.sprout.domain.member.entity.Member;
 import com.example.sprout.global.error.BusinessException;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -16,11 +16,13 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Pageable;
 
+import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.*;
@@ -40,8 +42,102 @@ public class InterviewSessionServiceTest {
 
 
     @Nested
+    @DisplayName("모의면접 목록 조회")
+    class GetInterviews {
+
+        @Test
+        @DisplayName("다음 페이지가 없으면 hasNext=false, nextIdAfter=null 반환")
+        void getInterviews_noNextPage() {
+            //given
+            Long requesterId = 1L;
+
+            InterviewSession session1 = mock(InterviewSession.class);
+            given(session1.getId()).willReturn(3L);
+            InterviewSession session2 = mock(InterviewSession.class);
+            given(session2.getId()).willReturn(2L);
+
+            given(interviewSessionRepository.findCursorPageByMemberId(eq(requesterId), isNull(), any(Pageable.class)))
+                    .willReturn(List.of(session1, session2));
+            given(interviewSessionRepository.countAllByMemberId(requesterId)).willReturn(2L);
+
+            // when
+            InterviewSessionCursorResponse response = interviewSessionService
+                    .getInterviews(requesterId, null, 10);
+
+            // then
+            assertThat(response.interviews()).hasSize(2);
+            assertThat(response.hasNext()).isFalse();
+            assertThat(response.nextIdAfter()).isNull();
+            assertThat(response.totalElements()).isEqualTo(2L);
+        }
+
+        @Test
+        @DisplayName("조회 결과가 limit을 초과하면 hasNext=true, 마지막 요소 id를 nextIdAfter로 반환")
+        void getInterviews_hasNextPage() {
+            //given
+            int limit = 2;
+            Long requesterId = 1L;
+
+            InterviewSession session1 = mock(InterviewSession.class);
+            given(session1.getId()).willReturn(4L);
+            InterviewSession session2 = mock(InterviewSession.class);
+            given(session2.getId()).willReturn(3L);
+            InterviewSession session3 = mock(InterviewSession.class);
+
+            given(interviewSessionRepository.findCursorPageByMemberId(eq(requesterId), isNull(), any(Pageable.class)))
+                    .willReturn(List.of(session1, session2, session3));
+            given(interviewSessionRepository.countAllByMemberId(requesterId)).willReturn(10L);
+
+            // when
+            InterviewSessionCursorResponse response = interviewSessionService.getInterviews(requesterId, null, limit);
+
+            // then
+            assertThat(response.interviews()).hasSize(limit);
+            assertThat(response.hasNext()).isTrue();
+            assertThat(response.nextIdAfter()).isEqualTo(3L);
+        }
+
+        @Test
+        @DisplayName("조회 결과가 없으면 빈 리스트와 hasNext=false 반환")
+        void getInterviews_empty() {
+            // given
+            Long requesterId = 1L;
+
+            given(interviewSessionRepository.findCursorPageByMemberId(eq(requesterId), isNull(), any(Pageable.class)))
+                    .willReturn(List.of());
+            given(interviewSessionRepository.countAllByMemberId(requesterId)).willReturn(0L);
+
+            // when
+            InterviewSessionCursorResponse response = interviewSessionService.getInterviews(requesterId, null, 10);
+
+            // then
+            assertThat(response.interviews()).isEmpty();
+            assertThat(response.hasNext()).isFalse();
+            assertThat(response.totalElements()).isZero();
+        }
+
+        @Test
+        @DisplayName("idAfter 커서를 리포지토리에 그대로 전달")
+        void getInterviews_withIdAfter() {
+            // given
+            Long requesterId = 1L;
+            Long idAfter = 100L;
+
+            given(interviewSessionRepository.findCursorPageByMemberId(eq(requesterId), eq(idAfter), any(Pageable.class)))
+                    .willReturn(List.of());
+            given(interviewSessionRepository.countAllByMemberId(requesterId)).willReturn(0L);
+
+            // when
+            interviewSessionService.getInterviews(requesterId, idAfter, 10);
+
+            // then
+            verify(interviewSessionRepository).findCursorPageByMemberId(eq(requesterId), eq(idAfter), any(Pageable.class));
+        }
+    }
+
+    @Nested
     @DisplayName("모의면접 총평 조회")
-    class getFeedback {
+    class GetFeedback {
 
         @Test
         @DisplayName("본인 소유 세션이면 총평 조회 성공")
