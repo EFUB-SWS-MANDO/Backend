@@ -3,6 +3,7 @@ package com.example.sprout.global.config;
 import com.example.sprout.domain.category.dto.CategoryDto;
 import com.example.sprout.domain.interview.dto.response.InterviewSessionCursorResponse;
 import com.example.sprout.domain.template.dto.TemplateDto;
+import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.redis.cache.RedisCacheConfiguration;
@@ -14,6 +15,7 @@ import tools.jackson.databind.json.JsonMapper;
 
 import java.time.Duration;
 
+@EnableCaching
 @Configuration
 public class RedisConfig {
 
