@@ -1,0 +1,53 @@
+package com.example.sprout.domain.auth.controller;
+
+import com.example.sprout.domain.auth.dto.request.SignInRequest;
+import com.example.sprout.domain.auth.dto.request.ReissueTokenRequest;
+import com.example.sprout.domain.auth.dto.response.SignInResponse;
+import com.example.sprout.domain.auth.dto.response.ReissueTokenResponse;
+import com.example.sprout.domain.auth.security.AuthMember;
+import com.example.sprout.domain.auth.service.AuthService;
+import com.example.sprout.global.common.response.ApiResponse;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+@RestController
+@RequestMapping("/api/auth")
+@RequiredArgsConstructor
+@Slf4j
+public class AuthController {
+
+    private final AuthService authService;
+
+    @PostMapping("/sign-in")
+    public ResponseEntity<ApiResponse<SignInResponse>> signIn(@Valid @RequestBody SignInRequest request) {
+
+        log.info("로그인 요청 - provider: {}", request.provider());
+        SignInResponse response = authService.signIn(request);
+
+        return ResponseEntity.ok(ApiResponse.success("로그인 성공", response));
+    }
+
+    @PostMapping("/sign-out")
+    public ResponseEntity<ApiResponse<Void>> signOut(@AuthMember Long memberId, HttpServletRequest request) {
+        log.info("로그아웃 요청 - memberId: {}", memberId);
+        authService.signOut(memberId, request);
+
+        return ResponseEntity.ok(ApiResponse.success("로그아웃 성공", null));
+    }
+
+    @PostMapping("/refresh")
+    public ResponseEntity<ApiResponse<ReissueTokenResponse>> reissueToken(@Valid @RequestBody ReissueTokenRequest request) {
+        log.info("토큰 재발급 요청");
+        ReissueTokenResponse response = authService.reissueToken(request);
+
+        return ResponseEntity.ok(ApiResponse.success("토큰 재발급 성공", response));
+    }
+
+}
