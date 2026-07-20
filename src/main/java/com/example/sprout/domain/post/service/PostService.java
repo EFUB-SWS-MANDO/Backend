@@ -50,7 +50,7 @@ public class PostService {
 
         }
         //카테고리 검증
-        List<Category> categories = validateCategories(request.categories());
+        List<Category> categories = resolveCategories(request.categories());
 
         //프로필 가져오기
         Profile authorProfile = getProfileByMember(author);
@@ -100,7 +100,7 @@ public class PostService {
 
         }
 
-        List<Category> newCategories = validateCategories(request.categories());
+        List<Category> newCategories = resolveCategories(request.categories());
 
         //게시글 수정
         post.updatePost(request.title(), request.content());
@@ -169,7 +169,7 @@ public class PostService {
         return followRepository.existsByFollowerIdAndFolloweeId(follower.getId(), followee.getId());
     }
 
-    private List<Category> validateCategories(List<String> rawTypes) {
+    private List<Category> resolveCategories (List<String> rawTypes) {
         List<String> types = rawTypes.stream().distinct().toList();
         List<Category> categories = categoryRepository.findAllByTypeIn(types);
 
