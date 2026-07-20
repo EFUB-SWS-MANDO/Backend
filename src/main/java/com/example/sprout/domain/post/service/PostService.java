@@ -111,13 +111,26 @@ public class PostService {
     }
 
     @Transactional
+    public void deletePostWithChildren(Long requesterId, Long postId) {
+        Member requester = getMemberById(requesterId);
+        Post post = getPostById(postId);
+
+        if (!isAuthor(requester, post.getAuthor())) {
+            log.warn("게시글 삭제 권한 없음 - requesterId: {}, authorId: {}", requesterId, post.getAuthor().getId());
+            throw new BusinessException(PostErrorCode.POST_ACCESS_DENIED);
+        }
+
+        deletePostWithChildren(post);
+    }
+
+    @Transactional
     public void deletePostByMember(Member member) {
         List<Post> postList = postRepository.findAllByAuthor(member);
-        postList.forEach(this::deletePost);
+        postList.forEach(this::deletePostWithChildren);
     }
 
     //Post 단일 삭제
-    private void deletePost(Post post) {
+    private void deletePostWithChildren (Post post) {
         //Post를 FK로 가지는 자식 엔티티 우선 삭제
         commentService.deleteByPost(post);
         postLikeService.deleteByPost(post);
