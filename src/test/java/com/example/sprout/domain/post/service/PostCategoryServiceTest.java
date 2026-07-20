@@ -15,7 +15,6 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
-import org.testcontainers.shaded.org.checkerframework.checker.units.qual.N;
 
 import java.util.List;
 
@@ -54,12 +53,12 @@ class PostCategoryServiceTest {
             postCategoryService.assignPostCategories(post, List.of(category));
 
             //then
-            ArgumentCaptor<PostCategory> captor = ArgumentCaptor.forClass(PostCategory.class);
-            verify(postCategoryRepository).save(captor.capture());
+            ArgumentCaptor<List<PostCategory>> captor = ArgumentCaptor.forClass(List.class);
+            verify(postCategoryRepository).saveAll(captor.capture());
 
-            PostCategory savedPostCategory = captor.getValue();
-            assertThat(savedPostCategory.getPost()).isEqualTo(post);
-            assertThat(savedPostCategory.getCategory()).isEqualTo(category);
+            List<PostCategory> savedPostCategories = captor.getValue();
+            assertThat(savedPostCategories.get(0).getPost()).isEqualTo(post);
+            assertThat(savedPostCategories.get(0).getCategory()).isEqualTo(category);
         }
     }
 
@@ -163,8 +162,8 @@ class PostCategoryServiceTest {
 
             //then: B,C 추가
             ArgumentCaptor<List<PostCategory>> addCaptor = ArgumentCaptor.forClass(List.class);
-            verify(postCategoryRepository).saveAll(removeCaptor.capture());
-            assertThat(removeCaptor.getValue())
+            verify(postCategoryRepository).saveAll(addCaptor.capture());
+            assertThat(addCaptor.getValue())
                     .extracting(postCategory -> postCategory.getCategory().getId())
                     .containsExactly(20L, 30L);
         }
@@ -172,7 +171,7 @@ class PostCategoryServiceTest {
 
     //테스트용 헬퍼
     private Category category(Long id, String type) {
-        Category category = Category.builder().build();
+        Category category = Category.builder().type(type).build();
         ReflectionTestUtils.setField(category, "id", id);
 
         return category;
