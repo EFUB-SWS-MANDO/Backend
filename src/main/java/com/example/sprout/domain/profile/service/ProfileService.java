@@ -42,7 +42,7 @@ public class ProfileService {
 
         log.info("프로필 생성 성공 - memberId: {}, profileId: {}, nickname: {}, profileImage: {}, bio: {}",
                 memberId, newProfile.getId(), newProfile.getNickname(), newProfile.getProfileImage(), newProfile.getBio());
-        return new CreateProfileResponse(newProfile.getId());
+        return new CreateProfileResponse(memberId);
     }
 
     @Transactional(readOnly = true)
