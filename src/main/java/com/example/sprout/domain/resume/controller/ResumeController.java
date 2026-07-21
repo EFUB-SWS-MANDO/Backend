@@ -7,6 +7,7 @@ import com.example.sprout.domain.resume.dto.response.GetResumeListResponse;
 import com.example.sprout.domain.resume.dto.response.ResumeResponse;
 import com.example.sprout.domain.resume.service.ResumeService;
 import com.example.sprout.global.common.response.ApiResponse;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Conditional;
@@ -25,7 +26,7 @@ public class ResumeController {
     // 자소서 생성
     @PostMapping
     public ResponseEntity<ApiResponse<ResumeResponse>> createResume(@AuthMember Long requesterId,
-                                                                    @RequestBody CreateResumeRequest request) {
+                                                                    @Valid @RequestBody CreateResumeRequest request) {
         log.info("자소서 생성 API 호출 - requesterId: {}", requesterId);
 
         ResumeResponse response = resumeService.createResume(requesterId, request);

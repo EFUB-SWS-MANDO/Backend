@@ -1,8 +1,12 @@
 package com.example.sprout.domain.resume.service;
 
+import com.example.sprout.domain.category.entity.Category;
 import com.example.sprout.domain.member.entity.Member;
 import com.example.sprout.domain.member.repository.MemberRepository;
 import com.example.sprout.domain.post.entity.Post;
+import com.example.sprout.domain.post.entity.PostCategory;
+import com.example.sprout.domain.post.exception.PostErrorCode;
+import com.example.sprout.domain.post.repository.PostCategoryRepository;
 import com.example.sprout.domain.post.repository.PostRepository;
 import com.example.sprout.domain.resume.dto.ai.GeneratedAnswer;
 import com.example.sprout.domain.resume.dto.request.CreateResumeRequest;
@@ -21,7 +25,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import tools.jackson.databind.ObjectMapper;
 
 import java.util.List;
 import java.util.Map;
@@ -46,10 +49,10 @@ class ResumeServiceCreateTest {
     private PostRepository postRepository;
 
     @Mock
-    private ResumeRepository resumeRepository;
+    private PostCategoryRepository postCategoryRepository;
 
     @Mock
-    private ResumeDraftService resumeDraftService;
+    private ResumeRepository resumeRepository;
 
     @Mock
     private AiChatClient aiChatClient;
@@ -61,9 +64,6 @@ class ResumeServiceCreateTest {
     private PromptTemplateLoader.PromptTemplate promptTemplate;
 
     @Mock
-    private ObjectMapper objectMapper;
-
-    @Mock
     private ResumeAiResponseParser parser;
 
     @InjectMocks
@@ -72,6 +72,8 @@ class ResumeServiceCreateTest {
     private Long requesterId;
     private Member member;
     private Post post;
+    private PostCategory postCategory;
+    private Category category;
     private CreateResumeRequest request;
 
     @BeforeEach
@@ -79,6 +81,8 @@ class ResumeServiceCreateTest {
         requesterId = 1L;
         member = mock(Member.class);
         post = mock(Post.class);
+        category = mock(Category.class);
+        postCategory = mock(PostCategory.class);
 
         request = new CreateResumeRequest(
                 "제목",
@@ -94,8 +98,29 @@ class ResumeServiceCreateTest {
         given(memberRepository.findById(requesterId))
                 .willReturn(Optional.of(member));
 
-        given(postRepository.findAllByIdWithCategories(request.postIds()))
+        given(member.getId())
+                .willReturn(requesterId);
+
+        given(post.getId())
+                .willReturn(10L);
+
+        given(post.getAuthor())
+                .willReturn(member);
+
+        given(postCategory.getPost())
+                .willReturn(post);
+
+        given(postCategory.getCategory())
+                .willReturn(category);
+
+        given(category.getType())
+                .willReturn("프로젝트");
+
+        given(postRepository.findAllById(request.postIds()))
                 .willReturn(List.of(post));
+
+        given(postCategoryRepository.findAllByPostIdIn(request.postIds()))
+                .willReturn(List.of(postCategory));
 
         given(post.getContent())
                 .willReturn("게시글 내용");
@@ -137,8 +162,29 @@ class ResumeServiceCreateTest {
         given(memberRepository.findById(requesterId))
                 .willReturn(Optional.of(member));
 
-        given(postRepository.findAllByIdWithCategories(request.postIds()))
+        given(member.getId())
+                .willReturn(requesterId);
+
+        given(post.getId())
+                .willReturn(10L);
+
+        given(post.getAuthor())
+                .willReturn(member);
+
+        given(postCategory.getPost())
+                .willReturn(post);
+
+        given(postCategory.getCategory())
+                .willReturn(category);
+
+        given(category.getType())
+                .willReturn("프로젝트");
+
+        given(postRepository.findAllById(request.postIds()))
                 .willReturn(List.of(post));
+
+        given(postCategoryRepository.findAllByPostIdIn(request.postIds()))
+                .willReturn(List.of(postCategory));
 
         given(post.getContent())
                 .willReturn("게시글 내용");
@@ -161,5 +207,26 @@ class ResumeServiceCreateTest {
                 .satisfies(e ->
                         assertThat(((BusinessException) e).getErrorCode())
                                 .isEqualTo(ResumeErrorCode.AI_ANSWER_MISSING));
+    }
+
+    @Test
+    @DisplayName("본인 게시글이 아니면 예외 발생")
+    void createResume_notOwnPost() {
+        // given
+        given(memberRepository.findById(requesterId))
+                .willReturn(Optional.of(member));
+
+        given(post.getAuthor())
+                .willReturn(mock(Member.class)); // 다른 사람으로 스터빙 (id가 requesterId와 다름)
+
+        given(postRepository.findAllById(request.postIds()))
+                .willReturn(List.of(post));
+
+        // when & then
+        assertThatThrownBy(() -> resumeService.createResume(requesterId, request))
+                .isInstanceOf(BusinessException.class)
+                .satisfies(e ->
+                        assertThat(((BusinessException) e).getErrorCode())
+                                .isEqualTo(PostErrorCode.POST_ACCESS_DENIED));
     }
 }
