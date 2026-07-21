@@ -5,6 +5,7 @@ import com.example.sprout.domain.member.entity.Member;
 import com.example.sprout.domain.member.repository.MemberRepository;
 import com.example.sprout.domain.post.entity.Post;
 import com.example.sprout.domain.post.entity.PostCategory;
+import com.example.sprout.domain.post.exception.PostErrorCode;
 import com.example.sprout.domain.post.repository.PostCategoryRepository;
 import com.example.sprout.domain.post.repository.PostRepository;
 import com.example.sprout.domain.resume.dto.ai.GeneratedAnswer;
@@ -97,8 +98,14 @@ class ResumeServiceCreateTest {
         given(memberRepository.findById(requesterId))
                 .willReturn(Optional.of(member));
 
+        given(member.getId())
+                .willReturn(requesterId);
+
         given(post.getId())
                 .willReturn(10L);
+
+        given(post.getAuthor())
+                .willReturn(member);
 
         given(postCategory.getPost())
                 .willReturn(post);
@@ -155,8 +162,14 @@ class ResumeServiceCreateTest {
         given(memberRepository.findById(requesterId))
                 .willReturn(Optional.of(member));
 
+        given(member.getId())
+                .willReturn(requesterId);
+
         given(post.getId())
                 .willReturn(10L);
+
+        given(post.getAuthor())
+                .willReturn(member);
 
         given(postCategory.getPost())
                 .willReturn(post);
@@ -194,5 +207,26 @@ class ResumeServiceCreateTest {
                 .satisfies(e ->
                         assertThat(((BusinessException) e).getErrorCode())
                                 .isEqualTo(ResumeErrorCode.AI_ANSWER_MISSING));
+    }
+
+    @Test
+    @DisplayName("본인 게시글이 아니면 예외 발생")
+    void createResume_notOwnPost() {
+        // given
+        given(memberRepository.findById(requesterId))
+                .willReturn(Optional.of(member));
+
+        given(post.getAuthor())
+                .willReturn(mock(Member.class)); // 다른 사람으로 스터빙 (id가 requesterId와 다름)
+
+        given(postRepository.findAllById(request.postIds()))
+                .willReturn(List.of(post));
+
+        // when & then
+        assertThatThrownBy(() -> resumeService.createResume(requesterId, request))
+                .isInstanceOf(BusinessException.class)
+                .satisfies(e ->
+                        assertThat(((BusinessException) e).getErrorCode())
+                                .isEqualTo(PostErrorCode.POST_ACCESS_DENIED));
     }
 }

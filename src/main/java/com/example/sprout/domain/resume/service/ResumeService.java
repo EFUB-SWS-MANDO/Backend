@@ -52,7 +52,7 @@ public class ResumeService {
     @Transactional
     public ResumeResponse createResume(Long requesterId, CreateResumeRequest request) {
         Member requester = getMember(requesterId);
-        List<Post> posts = getPostList(request.postIds());
+        List<Post> posts = getPostList(request.postIds(), requesterId);
         List<PostCategory> postCategoryList = getPostCategoryList(request.postIds());
 
         // postId 기준 Post, PostCategory 그룹핑
@@ -99,12 +99,21 @@ public class ResumeService {
     }
 
     // 게시글 리스트 조회
-    private List<Post> getPostList(List<Long> postIds) {
+    private List<Post> getPostList(List<Long> postIds, Long requesterId) {
         List<Post> postList = postRepository.findAllById(postIds);
 
         if (postIds.size() != postList.size()) {
             throw new BusinessException(PostErrorCode.POST_NOT_FOUND);
         }
+
+        // 본인의 게시글을 가져왔는지 확인
+        boolean hasUnauthorizedPost = postList.stream()
+                .anyMatch(post -> !post.getAuthor().getId().equals(requesterId));
+
+        if (hasUnauthorizedPost) {
+            throw new BusinessException(PostErrorCode.POST_ACCESS_DENIED);
+        }
+
         return postList;
     }
 
