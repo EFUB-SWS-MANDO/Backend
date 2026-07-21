@@ -8,9 +8,6 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
-import java.util.ArrayList;
-import java.util.List;
-
 @Entity
 @Getter
 @Table(name = "posts",
@@ -37,9 +34,6 @@ public class Post extends BaseTimeEntity {
 
     @Column(name = "like_count")
     private int likeCount;
-
-    @OneToMany(mappedBy = "post", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<PostCategory> postCategories = new ArrayList<>();
 
     @Builder
     public Post(Member author, String title, String content) {

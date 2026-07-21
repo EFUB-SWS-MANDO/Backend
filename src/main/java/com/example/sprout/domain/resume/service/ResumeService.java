@@ -4,7 +4,9 @@ import com.example.sprout.domain.member.entity.Member;
 import com.example.sprout.domain.member.exception.MemberErrorCode;
 import com.example.sprout.domain.member.repository.MemberRepository;
 import com.example.sprout.domain.post.entity.Post;
+import com.example.sprout.domain.post.entity.PostCategory;
 import com.example.sprout.domain.post.exception.PostErrorCode;
+import com.example.sprout.domain.post.repository.PostCategoryRepository;
 import com.example.sprout.domain.post.repository.PostRepository;
 import com.example.sprout.domain.resume.dto.ai.GeneratedAnswer;
 import com.example.sprout.domain.resume.dto.request.CreateResumeRequest;
@@ -25,7 +27,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import tools.jackson.databind.ObjectMapper;
 
 import java.util.List;
 import java.util.Map;
@@ -38,6 +39,7 @@ public class ResumeService {
 
     private final MemberRepository memberRepository;
     private final PostRepository postRepository;
+    private final PostCategoryRepository postCategoryRepository;
     private final ResumeRepository resumeRepository;
 
     private final ResumeDraftService resumeDraftService;
@@ -51,9 +53,13 @@ public class ResumeService {
     public ResumeResponse createResume(Long requesterId, CreateResumeRequest request) {
         Member requester = getMember(requesterId);
         List<Post> posts = getPostList(request.postIds());
+        List<PostCategory> postCategoryList = getPostCategoryList(request.postIds());
+
+        // postId 기준 Post, PostCategory 그룹핑
+        Map<Long, List<PostCategory>> categoriesByPostId = groupCategoriesByPostId(postCategoryList);
 
         // Post -> 하나의 문자열로 합침
-        String postSummary = buildPostSummary(posts);
+        String postSummary = buildPostSummary(posts, categoriesByPostId);
         Resume resume = request.toEntity(requester);
 
         Map<Long, GeneratedAnswer> answerMap = generateAllAnswers(postSummary, request.questions());
@@ -94,7 +100,7 @@ public class ResumeService {
 
     // 게시글 리스트 조회
     private List<Post> getPostList(List<Long> postIds) {
-        List<Post> postList = postRepository.findAllByIdWithCategories(postIds);
+        List<Post> postList = postRepository.findAllById(postIds);
 
         if (postIds.size() != postList.size()) {
             throw new BusinessException(PostErrorCode.POST_NOT_FOUND);
@@ -102,10 +108,33 @@ public class ResumeService {
         return postList;
     }
 
+    // 게시글 카테고리 조회
+    private List<PostCategory> getPostCategoryList(List<Long> postIds) {
+        return postCategoryRepository.findAllByPostIdIn(postIds);
+    }
+
+    // postId 기준 카테고리 그룹핑
+    private Map<Long, List<PostCategory>> groupCategoriesByPostId(List<PostCategory> postCategoryList) {
+        return postCategoryList.stream()
+                .collect(Collectors.groupingBy(pc -> pc.getPost().getId()));
+    }
+
     // Post -> 하나의 문자열로 합침
-    private String buildPostSummary(List<Post> postList) {
+    private String buildPostSummary(List<Post> postList, Map<Long, List<PostCategory>> categoriesByPostId) {
         return postList.stream()
-                .map(Post::getContent)
+                .map(post -> {
+                    List<String> categoryNames = categoriesByPostId
+                            .getOrDefault(post.getId(), List.of())
+                            .stream()
+                            .map(pc -> pc.getCategory().getType())
+                            .toList();
+
+                    String prefix = categoryNames.isEmpty()
+                            ? ""
+                            : "[" + String.join(", ", categoryNames) + "]";
+
+                    return prefix + post.getContent();
+                })
                 .collect(Collectors.joining("\n\n"));
     }
 
