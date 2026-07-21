@@ -9,7 +9,9 @@ import org.springframework.http.HttpStatus;
 @RequiredArgsConstructor
 public enum InterviewErrorCode implements ErrorCode {
 
-    INTERVIEW_NOT_COMPLETED(HttpStatus.CONFLICT, "면접이 종료되지 않았습니다.");
+    INTERVIEW_NOT_COMPLETED(HttpStatus.CONFLICT, "면접이 종료되지 않았습니다."),
+    INTERVIEW_ACCESS_DENIED(HttpStatus.FORBIDDEN, "권한이 없습니다."),
+    INTERVIEW_NOT_FOUND(HttpStatus.NOT_FOUND, "해당 모의면접을 찾을 수 없습니다.");
 
     private final HttpStatus status;
     private final String message;
