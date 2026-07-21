@@ -10,6 +10,7 @@ import com.example.sprout.domain.post.repository.PostCategoryRepository;
 import com.example.sprout.domain.post.repository.PostRepository;
 import com.example.sprout.domain.resume.dto.ai.GeneratedAnswer;
 import com.example.sprout.domain.resume.dto.request.CreateResumeRequest;
+import com.example.sprout.domain.resume.dto.request.GetResumeListCondition;
 import com.example.sprout.domain.resume.dto.response.GetResumeListResponse;
 import com.example.sprout.domain.resume.dto.response.ResumeDetailItem;
 import com.example.sprout.domain.resume.dto.response.ResumeListItem;
@@ -83,7 +84,11 @@ public class ResumeService {
 
     // 자소서 목록 조회
     @Transactional(readOnly = true)
-    public GetResumeListResponse getResumeList(Long requesterId, Long idAfter, int limit, String keyword) {
+    public GetResumeListResponse getResumeList(Long requesterId, GetResumeListCondition condition) {
+        int limit = condition.limit();
+        Long idAfter = condition.idAfter();
+        String keyword = condition.keyword();
+
         Member author = getMember(requesterId);
 
         Pageable pageable = PageRequest.of(0, limit + 1);

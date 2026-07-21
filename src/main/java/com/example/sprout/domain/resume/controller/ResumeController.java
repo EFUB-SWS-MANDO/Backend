@@ -10,7 +10,6 @@ import com.example.sprout.global.common.response.ApiResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.context.annotation.Conditional;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -39,7 +38,7 @@ public class ResumeController {
                                                                             @ModelAttribute GetResumeListCondition condition) {
         log.info("자소서 목록 조회 API 호출 - requesterId: {}", requesterId);
 
-        GetResumeListResponse response = resumeService.getResumeList(requesterId, condition.idAfter(), condition.limit(), condition.keyword());
+        GetResumeListResponse response = resumeService.getResumeList(requesterId, condition);
         return ResponseEntity.ok().body(ApiResponse.success("자소서 목록 조회 성공", response));
     }
 }
