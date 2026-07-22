@@ -192,8 +192,8 @@ public class ResumeService {
 
         AiChatRequest aiChatRequest = AiChatRequest.builder()
                 .messages(List.of(new AiMessage("system", systemPrompt)))
-                .temperature(0.8)
-                .maxTokens(Math.min(500 * questions.size(), 1500))
+                .temperature(1.0)
+                .maxTokens(Math.min(1000 * questions.size(), 3000))
                 .build();
 
         AiChatResponse response = aiChatClient.chat(aiChatRequest);
