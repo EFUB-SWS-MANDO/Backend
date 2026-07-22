@@ -18,7 +18,7 @@ public interface ResumeRepository extends JpaRepository<Resume, Long> {
     @Query("""
             SELECT r FROM Resume r
             WHERE r.author = :author
-            AND (:keyword IS NULL OR r.title ILIKE CONCAT('%', :keyword, '%'))
+            AND (:keyword IS NULL OR r.title ILIKE CONCAT('%', CAST(:keyword AS string), '%'))
             AND (:idAfter IS NULL OR r.id < :idAfter)
             ORDER BY r.createdAt DESC
            """)
@@ -30,7 +30,7 @@ public interface ResumeRepository extends JpaRepository<Resume, Long> {
     @Query("""
             SELECT count(r) FROM Resume r
             WHERE r.author = :author
-            AND (:keyword IS NULL OR r.title ILIKE CONCAT('%', :keyword, '%'))
+            AND (:keyword IS NULL OR r.title ILIKE CONCAT('%', CAST(:keyword AS string), '%'))
            """)
     Long countAllByAuthorAndKeyword(@Param("author") Member author,
                                     @Param("keyword") String keyword);
