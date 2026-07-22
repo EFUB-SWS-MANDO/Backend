@@ -8,7 +8,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
-import software.amazon.awssdk.services.s3.model.GetObjectAclRequest;
 import software.amazon.awssdk.services.s3.model.GetObjectRequest;
 import software.amazon.awssdk.services.s3.presigner.S3Presigner;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
@@ -27,7 +26,6 @@ import java.util.UUID;
 public class S3PresignedUrlService {
 
     private final S3Presigner s3Presigner;
-    private final S3Client s3Client;
 
     @Value("${cloud.aws.s3.bucket}")
     private String bucket;
@@ -73,19 +71,5 @@ public class S3PresignedUrlService {
         return s3Keys.stream()
                 .map(this::createDownloadUrl)
                 .toList();
-    }
-
-    // 삭제
-    public void deleteFiles(List<String> s3Keys) {
-        for (String key : s3Keys) {
-            try {
-                s3Client.deleteObject(DeleteObjectRequest.builder()
-                    .bucket(bucket)
-                    .key(key)
-                    .build());
-            } catch (Exception e) {
-            log.warn("S3 파일 삭제 실패: key={}", key, e);
-            }
-        }
     }
 }

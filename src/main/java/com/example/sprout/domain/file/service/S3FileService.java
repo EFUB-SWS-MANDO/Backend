@@ -27,6 +27,20 @@ public class S3FileService {
                 .toList();
     }
 
+    // 삭제
+    public void deleteFiles(List<String> s3Keys) {
+        for (String key : s3Keys) {
+            try {
+                s3Client.deleteObject(DeleteObjectRequest.builder()
+                        .bucket(bucket)
+                        .key(key)
+                        .build());
+            } catch (Exception e) {
+                log.warn("S3 파일 삭제 실패: key={}", key, e);
+            }
+        }
+    }
+
 
     // Helper 함수
 
