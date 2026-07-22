@@ -32,3 +32,12 @@ ai:
     timeout:
       connect: 5s
       read: 60s
+
+cloud:
+  aws:
+    region: ${AWS_REGION:ap-northeast-2}
+    credentials:
+      access-key: ${AWS_ACCESS_KEY_ID:}
+      secret-key: ${AWS_SECRET_ACCESS_KEY:}
+    s3:
+      bucket: ${S3_BUCKET_NAME:sprout-storage}
