@@ -33,17 +33,10 @@ import static org.mockito.Mockito.*;
 @ExtendWith(MockitoExtension.class)
 class CommentServiceDeleteTest {
 
-    @Mock
-    private MemberRepository memberRepository;
-
-    @Mock
-    private ProfileRepository profileRepository;
-
-    @Mock
-    private PostRepository postRepository;
-
-    @Mock
-    private CommentRepository commentRepository;
+    @Mock private MemberRepository memberRepository;
+    @Mock private ProfileRepository profileRepository;
+    @Mock private PostRepository postRepository;
+    @Mock private CommentRepository commentRepository;
 
     @InjectMocks
     private CommentService commentService;
@@ -52,6 +45,7 @@ class CommentServiceDeleteTest {
     private Long commentId;
 
     private Member requester;
+    private Post post;
     private Comment comment;
 
     @BeforeEach
@@ -67,7 +61,9 @@ class CommentServiceDeleteTest {
 
         ReflectionTestUtils.setField(requester, "id", requesterId);
 
-        Post post = mock(Post.class);
+        post = mock(Post.class);
+        lenient().when(post.isPrivate()).thenReturn(false);
+        lenient().when(post.getAuthor()).thenReturn(requester); // 기본: 게시글 작성자 = requester
 
         comment = Comment.builder()
                 .author(requester)
