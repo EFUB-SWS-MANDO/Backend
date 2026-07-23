@@ -155,6 +155,8 @@ public class CommentService {
 
         boolean isVisible = comment.isVisible(requesterId, post.getAuthor().getId());
 
+        log.info("댓글 수정 성공 - commentId: {}", commentId);
+
         return CommentResponse.of(comment, authorProfile, isVisible);
     }
 
@@ -174,6 +176,8 @@ public class CommentService {
 
         // 댓글 삭제
         comment.delete();
+
+        log.info("댓글 삭제 성공");
     }
 
     // 회원 탈퇴 시 해당 회원이 작성한 모든 댓글을 soft delete 처리
