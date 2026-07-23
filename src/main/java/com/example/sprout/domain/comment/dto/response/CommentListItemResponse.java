@@ -7,9 +7,9 @@ public record CommentListItemResponse(
         CommentResponse commentResponse,
         boolean hasChildren
 ) {
-    public static CommentListItemResponse of(Comment comment, Profile authorProfile, boolean hasChildren) {
+    public static CommentListItemResponse of(Comment comment, Profile authorProfile, boolean isVisible, boolean hasChildren) {
         return new CommentListItemResponse(
-                CommentResponse.of(comment, authorProfile),
+                CommentResponse.of(comment, authorProfile, isVisible),
                 hasChildren
         );
     }
