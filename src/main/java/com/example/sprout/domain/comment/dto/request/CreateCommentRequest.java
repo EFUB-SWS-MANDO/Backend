@@ -4,6 +4,7 @@ import com.example.sprout.domain.comment.entity.Comment;
 import com.example.sprout.domain.member.entity.Member;
 import com.example.sprout.domain.post.entity.Post;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
 public record CreateCommentRequest(
@@ -11,6 +12,8 @@ public record CreateCommentRequest(
         @Size(max = 300, message = "댓글은 300자를 초과할 수 없습니다.")
         String content,
         Long parentId,
+
+        @NotNull
         boolean isPrivate
 ) {
     public Comment toEntity(Member author, Post post, Comment parent, boolean isReplyPrivate) {
