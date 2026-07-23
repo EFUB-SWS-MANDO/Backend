@@ -43,7 +43,7 @@ public class Comment extends BaseTimeEntity {
     @Column(name = "thread_root_id")
     private Long threadRootId;
 
-    @Column(nullable = false)
+    @Column(name = "is_private", nullable = false)
     private boolean isPrivate;
 
     @Column(nullable = false)
