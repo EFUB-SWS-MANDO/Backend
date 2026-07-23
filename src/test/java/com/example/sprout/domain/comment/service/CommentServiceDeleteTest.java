@@ -34,8 +34,6 @@ import static org.mockito.Mockito.*;
 class CommentServiceDeleteTest {
 
     @Mock private MemberRepository memberRepository;
-    @Mock private ProfileRepository profileRepository;
-    @Mock private PostRepository postRepository;
     @Mock private CommentRepository commentRepository;
 
     @InjectMocks
