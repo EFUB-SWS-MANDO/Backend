@@ -54,14 +54,18 @@ public class CommentService {
 
         Post post = getPost(postId);
 
-        Comment parent = resolveParent(request.parentId(), postId);
+        // 비공개 게시글인 경우 게시글 작성자만 comment 요청 가능
+        validateAuthorInPrivatePost(author.getId(), post);
 
-        Comment newComment = request.toEntity(author, post, parent);
+        Comment parent = resolveParent(request.parentId(), postId);
+        boolean isReplyPrivate = parent != null ? parent.isPrivate() || request.isPrivate() : request.isPrivate();
+
+        Comment newComment = request.toEntity(author, post, parent, isReplyPrivate);
         commentRepository.save(newComment);
 
         log.info("댓글 생성 성공");
 
-        return CommentResponse.of(newComment, authorProfile);
+        return CommentResponse.of(newComment, authorProfile, true);
     }
 
     // 댓글 목록 조회
@@ -72,6 +76,9 @@ public class CommentService {
         Member member = getMember(requesterId);
         // 게시글 조회
         Post post = getPost(postId);
+
+        // 비공개 게시글인 경우 게시글 작성자만 comment 요청 가능
+        validateAuthorInPrivatePost(member.getId(), post);
 
         // 최상위 댓글 limit + 1개 조회
         Pageable pageable = PageRequest.of(0, limit + 1);
@@ -100,7 +107,7 @@ public class CommentService {
                 .collect(Collectors.toSet());
 
         Map<Long, Profile> profileMap = buildAuthorProfileMap(fullList);
-        List<CommentListItemResponse> commentResponseList = toCommentResponseList(fullList, parentIdWithChildren, profileMap);
+        List<CommentListItemResponse> commentResponseList = toCommentResponseList(fullList, parentIdWithChildren, profileMap, member.getId(), post.getAuthor().getId());
 
         // nextIdAfter: 마지막 부모 댓글 id
         Long nextIdAfter = resolveNextIdAfter(pageParents, hasNext, Comment::getId);
@@ -121,18 +128,34 @@ public class CommentService {
         Member requester = getMember(requesterId);
         // 댓글 조회
         Comment comment = getComment(commentId);
+        Post post = comment.getPost();
+
+        // 비공개 게시글인 경우 게시글 작성자만 comment 요청 가능
+        validateAuthorInPrivatePost(requesterId, post);
 
         // requester == comment author랑 일치 여부 확인
         validateAuthor(requester, comment);
         validateNotDeleted(comment);
 
+        // 부모 댓글이 비공개 상태일 때 대댓글이 비공개 -> 공개 처리 하지 못하도록 검증
+        validatePrivateToPublic(comment, request);
+
         // 댓글 수정
-        comment.updateComment(request.content());
+        boolean wasPrivate = comment.isPrivate();
+        comment.updateComment(request.content(), request.isPrivate());
+
+        // 최상위 댓글 공개 -> 비공개 수정인 경우 대댓글도 강제 비공개 처리
+        if (comment.getParent() == null && !wasPrivate && comment.isPrivate()) {
+            commentRepository.findChildrenByThreadRootIds(List.of(comment.getId()))
+                    .forEach(Comment::forcePrivate);
+        }
 
         // 작성자 프로필 조회
         Profile authorProfile = getProfile(requester);
 
-        return CommentResponse.of(comment, authorProfile);
+        boolean isVisible = comment.isVisible(requesterId, post.getAuthor().getId());
+
+        return CommentResponse.of(comment, authorProfile, isVisible);
     }
 
     // 댓글 삭제
@@ -143,6 +166,9 @@ public class CommentService {
         Member requester = getMember(requesterId);
         // 댓글 조회
         Comment comment = getComment(commentId);
+
+        // 비공개 게시글인 경우 게시글 작성자만 comment 요청 가능
+        validateAuthorInPrivatePost(requester.getId(), comment.getPost());
         // 작성자/요청자 일치 확인
         validateAuthor(requester, comment);
 
@@ -211,6 +237,13 @@ public class CommentService {
                 });
     }
 
+    // 비공개 게시글인 경우 게시글 작성자만 요청하도록 검증
+    private void validateAuthorInPrivatePost(Long requesterId, Post post) {
+        if (!requesterId.equals(post.getAuthor().getId()) && post.isPrivate()) {
+            throw new BusinessException(CommentErrorCode.COMMENT_ACCESS_DENIED);
+        }
+    }
+
     // parent 댓글 확정 (null / parentId)
     private Comment resolveParent(Long parentId, Long postId) {
         if (parentId == null) {
@@ -239,19 +272,22 @@ public class CommentService {
     }
 
     // comment -> CommentResponseList
-    private List<CommentListItemResponse> toCommentResponseList(List<Comment> commentList, Set<Long> parentIdWithChildren, Map<Long, Profile> profileMap) {
+    private List<CommentListItemResponse> toCommentResponseList(List<Comment> commentList, Set<Long> parentIdWithChildren, Map<Long, Profile> profileMap,
+                                                                Long requesterId, Long postAuthorId) {
         return commentList.stream()
-                .map(comment -> toCommentResponse(comment, parentIdWithChildren.contains(comment.getId()), profileMap))
+                .map(comment -> toCommentResponse(comment, parentIdWithChildren.contains(comment.getId()), profileMap, requesterId, postAuthorId))
                 .toList();
     }
 
     // comment -> CommentResponse 변환
-    private CommentListItemResponse toCommentResponse(Comment comment, boolean hasChildren, Map<Long, Profile> profileMap) {
+    private CommentListItemResponse toCommentResponse(Comment comment, boolean hasChildren, Map<Long, Profile> profileMap,
+                                                      Long requesterId, Long postAuthorId) {
         Member author = comment.getAuthor();
         Profile authorProfile = (author != null)
                 ? profileMap.get(author.getId()) : null;
+        boolean isVisible = comment.isVisible(requesterId, postAuthorId);
 
-        return CommentListItemResponse.of(comment, authorProfile, hasChildren);
+        return CommentListItemResponse.of(comment, authorProfile, isVisible, hasChildren);
     }
 
     private Map<Long, Profile> buildAuthorProfileMap(List<Comment> commentList) {
@@ -283,6 +319,12 @@ public class CommentService {
             Long authorId = (comment.getAuthor() != null) ? comment.getAuthor().getId() : null;
             log.error("댓글 작성자가 아닙니다. - memberId, authorId: {}, {}", member.getId(), authorId);
             throw new BusinessException(CommentErrorCode.COMMENT_ACCESS_DENIED);
+        }
+    }
+
+    private void validatePrivateToPublic(Comment comment, UpdateCommentRequest request) {
+        if (comment.getParent() != null && comment.getParent().isPrivate() && !request.isPrivate()) {
+            throw new BusinessException(CommentErrorCode.CANNOT_MAKE_REPLY_PUBLIC_WHEN_PARENT_PRIVATE);
         }
     }
 
