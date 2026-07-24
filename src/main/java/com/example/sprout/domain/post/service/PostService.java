@@ -50,7 +50,7 @@ public class PostService {
 
         }
         //카테고리 검증
-        List<Category> categories = validateCategories(request.categories());
+        List<Category> categories = resolveCategories(request.categories());
 
         //프로필 가져오기
         Profile authorProfile = getProfileByMember(author);
@@ -100,7 +100,7 @@ public class PostService {
 
         }
 
-        List<Category> newCategories = validateCategories(request.categories());
+        List<Category> newCategories = resolveCategories(request.categories());
 
         //게시글 수정
         post.updatePost(request.title(), request.content());
@@ -111,13 +111,26 @@ public class PostService {
     }
 
     @Transactional
+    public void deletePostWithChildren(Long requesterId, Long postId) {
+        Member requester = getMemberById(requesterId);
+        Post post = getPostById(postId);
+
+        if (!isAuthor(requester, post.getAuthor())) {
+            log.warn("게시글 삭제 권한 없음 - requesterId: {}, authorId: {}", requesterId, post.getAuthor().getId());
+            throw new BusinessException(PostErrorCode.POST_ACCESS_DENIED);
+        }
+
+        deletePostWithChildren(post);
+    }
+
+    @Transactional
     public void deletePostByMember(Member member) {
         List<Post> postList = postRepository.findAllByAuthor(member);
-        postList.forEach(this::deletePost);
+        postList.forEach(this::deletePostWithChildren);
     }
 
     //Post 단일 삭제
-    private void deletePost(Post post) {
+    private void deletePostWithChildren (Post post) {
         //Post를 FK로 가지는 자식 엔티티 우선 삭제
         commentService.deleteByPost(post);
         postLikeService.deleteByPost(post);
@@ -156,7 +169,7 @@ public class PostService {
         return followRepository.existsByFollowerIdAndFolloweeId(follower.getId(), followee.getId());
     }
 
-    private List<Category> validateCategories(List<String> rawTypes) {
+    private List<Category> resolveCategories (List<String> rawTypes) {
         List<String> types = rawTypes.stream().distinct().toList();
         List<Category> categories = categoryRepository.findAllByTypeIn(types);
 
