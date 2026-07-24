@@ -24,13 +24,13 @@ public class ResumeDraft extends BaseTimeEntity {
     @Column(name = "order_index", nullable = false)
     private Long orderIndex;
 
-    @Column(nullable = false)
+    @Column(name = "question", length = 500, nullable = false)
     private String question;
 
-    @Column
+    @Column(name = "answer", columnDefinition = "TEXT")
     private String answer;
 
-    @Column
+    @Column(name = "description", length = 500)
     private String description;
 
     @Builder
