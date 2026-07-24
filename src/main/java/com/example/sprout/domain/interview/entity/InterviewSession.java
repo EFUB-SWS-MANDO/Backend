@@ -32,6 +32,9 @@ public class InterviewSession extends BaseTimeEntity {
     @JoinColumn(name = "member_id", nullable = false, updatable = false)
     private Member member;
 
+    @Column(name = "title", nullable = false)
+    private String title;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false)
     private InterviewSessionStatus status;
@@ -50,11 +53,12 @@ public class InterviewSession extends BaseTimeEntity {
     private String feedback;
 
     @Builder
-    public InterviewSession(Member member, InterviewSessionType type){
+    public InterviewSession(Member member, InterviewSessionType type, String title){
         this.status = InterviewSessionStatus.IN_PROGRESS; // 생성 시 기본 설정 - 진행 중
 
         this.member = member;
         this.type = type;
+        this.title = title;
     }
 
     public void complete() {
