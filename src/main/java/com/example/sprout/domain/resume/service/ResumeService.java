@@ -10,7 +10,10 @@ import com.example.sprout.domain.post.repository.PostCategoryRepository;
 import com.example.sprout.domain.post.repository.PostRepository;
 import com.example.sprout.domain.resume.dto.ai.GeneratedAnswer;
 import com.example.sprout.domain.resume.dto.request.CreateResumeRequest;
+import com.example.sprout.domain.resume.dto.request.GetResumeListCondition;
+import com.example.sprout.domain.resume.dto.response.GetResumeListResponse;
 import com.example.sprout.domain.resume.dto.response.ResumeDetailItem;
+import com.example.sprout.domain.resume.dto.response.ResumeListItem;
 import com.example.sprout.domain.resume.dto.response.ResumeResponse;
 import com.example.sprout.domain.resume.entity.Resume;
 import com.example.sprout.domain.resume.entity.ResumeDraft;
@@ -25,12 +28,16 @@ import com.example.sprout.global.ai.prompt.PromptTemplateLoader;
 import com.example.sprout.global.error.BusinessException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+
+import static com.example.sprout.global.common.util.CursorPageUtils.*;
 
 @Service
 @RequiredArgsConstructor
@@ -73,6 +80,29 @@ public class ResumeService {
         Resume saved = resumeRepository.save(resume);
 
         return toResponse(saved);
+    }
+
+    // 자소서 목록 조회
+    @Transactional(readOnly = true)
+    public GetResumeListResponse getResumeList(Long requesterId, GetResumeListCondition condition) {
+        int limit = condition.limit();
+        Long idAfter = condition.idAfter();
+        String keyword = condition.keyword();
+
+        Member author = getMember(requesterId);
+
+        Pageable pageable = PageRequest.of(0, limit + 1);
+        List<Resume> resumeList = resumeRepository.findPageByAuthorAndKeyword(author, idAfter, keyword, pageable);
+
+        boolean hasNext = hasNextPage(resumeList, limit);
+
+        List<Resume> pageResumeList = trimToPageSize(resumeList, limit, hasNext);
+        List<ResumeListItem> pageResumeListItem = toResumeListItem(pageResumeList);
+
+        Long nextIdAfter = resolveNextIdAfter(pageResumeList, hasNext, Resume::getId);
+        Long totalElements = resumeRepository.countAllByAuthorAndKeyword(author, keyword);
+
+        return GetResumeListResponse.of(pageResumeListItem, nextIdAfter, hasNext, totalElements);
     }
 
     //회원 탈퇴 시 resume 및 resumeDraft 삭제
@@ -197,4 +227,8 @@ public class ResumeService {
         return ResumeResponse.of(resume, items);
     }
 
+    private List<ResumeListItem> toResumeListItem(List<Resume> resumes) {
+        return resumes.stream()
+                .map(ResumeListItem::from).toList();
+    }
 }
