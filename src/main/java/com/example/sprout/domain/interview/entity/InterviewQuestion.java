@@ -13,7 +13,7 @@ import lombok.NoArgsConstructor;
 @Table(
         name = "interview_questions",
         indexes = {
-                @Index(name = "idx_interview_session_id", columnList = "session_id")
+                @Index(name = "idx_interview_question_session_id", columnList = "session_id")
         }
 )
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
