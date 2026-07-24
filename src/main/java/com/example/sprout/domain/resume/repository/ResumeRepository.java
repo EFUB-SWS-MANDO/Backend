@@ -20,7 +20,7 @@ public interface ResumeRepository extends JpaRepository<Resume, Long> {
             WHERE r.author = :author
             AND (:keyword IS NULL OR r.title ILIKE CONCAT('%', CAST(:keyword AS string), '%'))
             AND (:idAfter IS NULL OR r.id < :idAfter)
-            ORDER BY r.createdAt DESC
+            ORDER BY r.id DESC
            """)
     List<Resume> findPageByAuthorAndKeyword(@Param("author") Member author,
                                             @Param("idAfter") Long idAfter,
