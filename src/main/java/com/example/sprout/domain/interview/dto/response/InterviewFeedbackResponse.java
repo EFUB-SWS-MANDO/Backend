@@ -1,4 +1,4 @@
-package com.example.sprout.domain.interview.dto;
+package com.example.sprout.domain.interview.dto.response;
 
 import com.example.sprout.domain.interview.entity.InterviewSession;
 
