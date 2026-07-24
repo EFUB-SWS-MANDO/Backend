@@ -35,7 +35,7 @@ public class PostController {
         log.info("게시글 상세조회 요청: requesterId: {}, postId: {}", requesterId, postId);
         PostDetailDto response = postService.getPostDetail(requesterId, postId);
 
-        return ResponseEntity.ok(ApiResponse.success("게시글 생성 성공", response));
+        return ResponseEntity.ok(ApiResponse.success("게시글 상세 조회 성공", response));
     }
 
     @PatchMapping("/{postId}")
