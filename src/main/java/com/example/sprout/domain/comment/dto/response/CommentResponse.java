@@ -1,7 +1,6 @@
 package com.example.sprout.domain.comment.dto.response;
 
 import com.example.sprout.domain.comment.entity.Comment;
-import com.example.sprout.domain.profile.entity.Profile;
 
 import java.time.LocalDateTime;
 
@@ -16,12 +15,8 @@ public record CommentResponse(
         LocalDateTime createdAt,
         boolean edited
 ) {
-    public static CommentResponse of(Comment comment, Profile authorProfile, boolean isVisible) {
+    public static CommentResponse of(Comment comment, SimpleMemberDto author, boolean isVisible) {
         String content = comment.isDeleted() ? "삭제된 댓글입니다" : comment.getContent();
-
-        SimpleMemberDto author = (authorProfile != null && isVisible && !comment.isDeleted())
-                ? SimpleMemberDto.from(authorProfile)
-                : SimpleMemberDto.unknown();
 
         // 볼 수 없음 & 삭제 x
         if (!isVisible && !comment.isDeleted()) {

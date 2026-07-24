@@ -5,9 +5,11 @@ import com.example.sprout.domain.comment.dto.request.UpdateCommentRequest;
 import com.example.sprout.domain.comment.dto.response.CommentListItemResponse;
 import com.example.sprout.domain.comment.dto.response.CommentResponse;
 import com.example.sprout.domain.comment.dto.response.GetCommentListResponse;
+import com.example.sprout.domain.comment.dto.response.SimpleMemberDto;
 import com.example.sprout.domain.comment.entity.Comment;
 import com.example.sprout.domain.comment.exception.CommentErrorCode;
 import com.example.sprout.domain.comment.repository.CommentRepository;
+import com.example.sprout.domain.file.service.S3PresignedUrlService;
 import com.example.sprout.domain.member.entity.Member;
 import com.example.sprout.domain.member.exception.MemberErrorCode;
 import com.example.sprout.domain.member.repository.MemberRepository;
@@ -42,6 +44,7 @@ public class CommentService {
     private final ProfileRepository profileRepository;
     private final PostRepository postRepository;
     private final CommentRepository commentRepository;
+    private final S3PresignedUrlService s3PresignedUrlService;
 
     // 댓글 생성
     @Transactional
@@ -49,9 +52,7 @@ public class CommentService {
         log.info("댓글 생성 요청 - postId: {}, parentId: {}", postId, request.parentId());
 
         Member author = getMember(requesterId);
-
         Profile authorProfile = getProfile(author);
-
         Post post = getPost(postId);
 
         // 비공개 게시글인 경우 게시글 작성자만 comment 요청 가능
@@ -60,12 +61,15 @@ public class CommentService {
         Comment parent = resolveParent(request.parentId(), postId);
         boolean isReplyPrivate = parent != null ? parent.isPrivate() || request.isPrivate() : request.isPrivate();
 
+        SimpleMemberDto simpleMemberDto = toSimpleMemberDto(authorProfile, true, false);
+
+
         Comment newComment = request.toEntity(author, post, parent, isReplyPrivate);
         commentRepository.save(newComment);
 
         log.info("댓글 생성 성공");
 
-        return CommentResponse.of(newComment, authorProfile, true);
+        return CommentResponse.of(newComment, simpleMemberDto, true);
     }
 
     // 댓글 목록 조회
@@ -154,10 +158,12 @@ public class CommentService {
         Profile authorProfile = getProfile(requester);
 
         boolean isVisible = comment.isVisible(requesterId, post.getAuthor().getId());
+        SimpleMemberDto simpleMemberDto = toSimpleMemberDto(authorProfile, isVisible, comment.isDeleted());
+
 
         log.info("댓글 수정 성공 - commentId: {}", commentId);
 
-        return CommentResponse.of(comment, authorProfile, isVisible);
+        return CommentResponse.of(comment, simpleMemberDto, isVisible);
     }
 
     // 댓글 삭제
@@ -241,6 +247,21 @@ public class CommentService {
                 });
     }
 
+    // SimpleMemberDto 형식 변환
+    private SimpleMemberDto toSimpleMemberDto(Profile authorProfile, boolean isVisible, boolean deleted) {
+        if (authorProfile == null || !isVisible || deleted) {
+            return SimpleMemberDto.unknown();
+        }
+
+        String profileImage = s3PresignedUrlService.createDownloadUrlOrNull(authorProfile.getFileKey());
+
+        return SimpleMemberDto.of(
+                authorProfile.getMember().getId(),
+                authorProfile.getNickname(),
+                profileImage
+        );
+    }
+
     // 비공개 게시글인 경우 게시글 작성자만 요청하도록 검증
     private void validateAuthorInPrivatePost(Long requesterId, Post post) {
         if (!requesterId.equals(post.getAuthor().getId()) && post.isPrivate()) {
@@ -291,7 +312,9 @@ public class CommentService {
                 ? profileMap.get(author.getId()) : null;
         boolean isVisible = comment.isVisible(requesterId, postAuthorId);
 
-        return CommentListItemResponse.of(comment, authorProfile, isVisible, hasChildren);
+        SimpleMemberDto simpleMemberDto = toSimpleMemberDto(authorProfile, isVisible, comment.isDeleted());
+
+        return CommentListItemResponse.of(comment, simpleMemberDto, isVisible, hasChildren);
     }
 
     private Map<Long, Profile> buildAuthorProfileMap(List<Comment> commentList) {
