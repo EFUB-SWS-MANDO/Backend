@@ -4,12 +4,14 @@ import com.example.sprout.domain.category.entity.Category;
 import com.example.sprout.domain.category.exception.CategoryErrorCode;
 import com.example.sprout.domain.category.repository.CategoryRepository;
 import com.example.sprout.domain.comment.service.CommentService;
+import com.example.sprout.domain.follow.repository.FollowRepository;
 import com.example.sprout.domain.member.entity.Member;
 import com.example.sprout.domain.member.exception.MemberErrorCode;
 import com.example.sprout.domain.member.repository.MemberRepository;
 import com.example.sprout.domain.post.dto.request.CreatePostRequest;
 import com.example.sprout.domain.post.dto.response.PostDetailDto;
 import com.example.sprout.domain.post.entity.Post;
+import com.example.sprout.domain.post.exception.PostErrorCode;
 import com.example.sprout.domain.post.repository.PostRepository;
 import com.example.sprout.domain.profile.entity.Profile;
 import com.example.sprout.domain.profile.exception.ProfileErrorCode;
@@ -35,7 +37,9 @@ public class PostService {
     private final CommentService commentService;
     private final PostLikeService postLikeService;
     private final PostCategoryService postCategoryService;
+    private final FollowRepository followRepository;
 
+    //게시글 생성
     @Transactional
     public PostDetailDto createPost(Long authorId, CreatePostRequest request) {
         Member author = getMemberById(authorId);
@@ -65,6 +69,22 @@ public class PostService {
         return PostDetailDto.of(newPost, authorProfile, true, false);
     }
 
+    //게시글 상세조회
+    @Transactional(readOnly = true)
+    public PostDetailDto getPostDetail(Long requesterId, Long postId) {
+        Member requester = getMemberById(requesterId);
+        Post post = getPostById(postId);
+        Member author = post.getAuthor();
+        Profile authorProfile = getProfileByMember(author);
+
+        boolean isMine = requester.getId().equals(author.getId());
+        boolean isFollowing = !isMine && getIsFollowing(requester, author);
+
+        log.info("게시글 상세조회 성공 -postId: {}, requesterId: {}, authorId: {}, title: {}",
+                post.getId(), requesterId, author.getId(), post.getTitle());
+        return PostDetailDto.of(post, authorProfile, isMine, isFollowing);
+    }
+
     @Transactional
     public void deletePostByMember(Member member) {
         List<Post> postList = postRepository.findAllByAuthor(member);
@@ -82,6 +102,8 @@ public class PostService {
         postRepository.delete(post);
     }
 
+
+    //private 헬퍼 메소드
     private Member getMemberById(Long memberId) {
         return memberRepository.findById(memberId)
                 .orElseThrow(() ->{
@@ -96,5 +118,17 @@ public class PostService {
                     log.warn("존재하지 않는 프로필입니다.");
                     return new BusinessException(ProfileErrorCode.PROFILE_NOT_FOUND);
                 });
+    }
+
+    private Post getPostById(Long postId) {
+        return postRepository.findById(postId)
+                .orElseThrow(() -> {
+                    log.warn("게시글이 존재하지 않습니다.");
+                    return new BusinessException(PostErrorCode.POST_NOT_FOUND);
+                });
+    }
+
+    private boolean getIsFollowing(Member follower, Member followee) {
+        return followRepository.existsByFollowerIdAndFolloweeId(follower.getId(), followee.getId());
     }
 }

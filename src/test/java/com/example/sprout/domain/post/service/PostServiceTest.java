@@ -4,12 +4,14 @@ import com.example.sprout.domain.category.entity.Category;
 import com.example.sprout.domain.category.exception.CategoryErrorCode;
 import com.example.sprout.domain.category.repository.CategoryRepository;
 import com.example.sprout.domain.comment.service.CommentService;
+import com.example.sprout.domain.follow.repository.FollowRepository;
 import com.example.sprout.domain.member.entity.Member;
 import com.example.sprout.domain.member.exception.MemberErrorCode;
 import com.example.sprout.domain.member.repository.MemberRepository;
 import com.example.sprout.domain.post.dto.request.CreatePostRequest;
 import com.example.sprout.domain.post.dto.response.PostDetailDto;
 import com.example.sprout.domain.post.entity.Post;
+import com.example.sprout.domain.post.exception.PostErrorCode;
 import com.example.sprout.domain.post.repository.PostRepository;
 import com.example.sprout.domain.profile.entity.Profile;
 import com.example.sprout.domain.profile.exception.ProfileErrorCode;
@@ -47,6 +49,8 @@ class PostServiceTest {
     private ProfileRepository profileRepository;
     @Mock
     private CategoryRepository categoryRepository;
+    @Mock
+    private FollowRepository followRepository;
     @Mock
     private CommentService commentService;
     @Mock
@@ -204,6 +208,169 @@ class PostServiceTest {
         }
     }
 
+    @Nested
+    @DisplayName("게시글 상세 조회")
+    class getPostDetail {
+
+        Long requesterId;
+        Member requester;
+        Long postId;
+        Post post;
+
+        @BeforeEach
+        void setUp() {
+            requesterId = 2L;
+            requester = Member.builder().build();
+            ReflectionTestUtils.setField(requester, "id", requesterId);
+
+            postId = 1L;
+            post = Post.builder()
+                    .author(author)
+                    .title("title")
+                    .content("content")
+                    .build();
+            ReflectionTestUtils.setField(post, "id", postId);
+        }
+
+        @Test
+        @DisplayName("게시글 상세조회 성공 - 타인 글 조회, isFollowing = false")
+        void getPostDetail_NotFollowing_Success() {
+            //given
+            given(memberRepository.findById(requesterId)).willReturn(Optional.of(requester));
+            given(postRepository.findById(postId)).willReturn(Optional.of(post));
+            given(profileRepository.findByMember(author)).willReturn(Optional.of(authorProfile));
+            given(followRepository.existsByFollowerIdAndFolloweeId(requesterId, authorId)).willReturn(false);
+
+            //when
+            PostDetailDto response = postService.getPostDetail(requesterId, postId);
+
+            //then
+            assertThat(response).isNotNull();
+            assertThat(response.postId()).isEqualTo(postId);
+            assertThat(response.title()).isEqualTo("title");
+            assertThat(response.content()).isEqualTo("content");
+            assertThat(response.author().memberId()).isEqualTo(authorId);
+            assertThat(response.author().nickname()).isEqualTo(authorProfile.getNickname());
+            assertThat(response.author().isFollowing()).isFalse();
+            assertThat(response.isMine()).isFalse();
+
+            verify(memberRepository).findById(requesterId);
+            verify(postRepository).findById(postId);
+            verify(profileRepository).findByMember(author);
+            verify(followRepository).existsByFollowerIdAndFolloweeId(requesterId, authorId);
+        }
+
+        @Test
+        @DisplayName("게시글 상세조회 성공 - 타인 글 조회, isFollowing = O")
+        void getPostDetail_Following_Success() {
+            //given
+            given(memberRepository.findById(requesterId)).willReturn(Optional.of(requester));
+            given(postRepository.findById(postId)).willReturn(Optional.of(post));
+            given(profileRepository.findByMember(author)).willReturn(Optional.of(authorProfile));
+            given(followRepository.existsByFollowerIdAndFolloweeId(requesterId, authorId)).willReturn(true);
+
+            //when
+            PostDetailDto response = postService.getPostDetail(requesterId, postId);
+
+            //then
+            assertThat(response).isNotNull();
+            assertThat(response.postId()).isEqualTo(postId);
+            assertThat(response.title()).isEqualTo("title");
+            assertThat(response.content()).isEqualTo("content");
+            assertThat(response.author().memberId()).isEqualTo(authorId);
+            assertThat(response.author().nickname()).isEqualTo(authorProfile.getNickname());
+            assertThat(response.author().isFollowing()).isTrue();
+            assertThat(response.isMine()).isFalse();
+
+            verify(memberRepository).findById(requesterId);
+            verify(postRepository).findById(postId);
+            verify(profileRepository).findByMember(author);
+            verify(followRepository).existsByFollowerIdAndFolloweeId(requesterId, authorId);
+        }
+
+        @Test
+        @DisplayName("게시글 상세조회 성공 - 본인 글 조회")
+        void getPostDetail_isMineTrue_Success() {
+            //given
+            given(memberRepository.findById(authorId)).willReturn(Optional.of(author));
+            given(postRepository.findById(postId)).willReturn(Optional.of(post));
+            given(profileRepository.findByMember(author)).willReturn(Optional.of(authorProfile));
+
+            //when
+            PostDetailDto response = postService.getPostDetail(authorId, postId);
+
+            //then
+            assertThat(response).isNotNull();
+            assertThat(response.postId()).isEqualTo(postId);
+            assertThat(response.title()).isEqualTo("title");
+            assertThat(response.content()).isEqualTo("content");
+            assertThat(response.author().memberId()).isEqualTo(authorId);
+            assertThat(response.author().nickname()).isEqualTo(authorProfile.getNickname());
+            assertThat(response.author().isFollowing()).isFalse();
+            assertThat(response.isMine()).isTrue();
+
+            verify(memberRepository).findById(authorId);
+            verify(postRepository).findById(postId);
+            verify(profileRepository).findByMember(author);
+            verifyNoInteractions(followRepository);
+        }
+
+        @Test
+        @DisplayName("존재하지 않는 회원이 게시글 조회 요청 시 실패")
+        void getPostDetail_MemberNotFound_Fail() {
+            //given
+            given(memberRepository.findById(requesterId)).willReturn(Optional.empty());
+
+            //when & then
+            BusinessException exception = assertThrows(
+                    BusinessException.class,
+                    () -> postService.getPostDetail(requesterId, postId)
+            );
+            assertThat(exception.getErrorCode()).isEqualTo(MemberErrorCode.MEMBER_NOT_FOUND);
+
+            verify(memberRepository).findById(requesterId);
+            verifyNoInteractions(postRepository, profileRepository, followRepository);
+        }
+
+        @Test
+        @DisplayName("존재하지 않는 게시글을 조회하려 시도 시 실패")
+        void getPostDetail_PostNotFound_Fail() {
+            //given
+            given(memberRepository.findById(requesterId)).willReturn(Optional.of(requester));
+            given(postRepository.findById(postId)).willReturn(Optional.empty());
+
+            //when & then
+            BusinessException exception = assertThrows(
+                    BusinessException.class,
+                    () -> postService.getPostDetail(requesterId, postId)
+            );
+            assertThat(exception.getErrorCode()).isEqualTo(PostErrorCode.POST_NOT_FOUND);
+
+            verify(memberRepository).findById(requesterId);
+            verify(postRepository).findById(postId);
+            verifyNoInteractions(profileRepository, followRepository);
+        }
+
+        @Test
+        @DisplayName("존재하지 않는 작성자 프로필의 게시글 조회 요청 시 실패")
+        void getPostDetail_ProfileNotFound_Fail() {
+            //given
+            given(memberRepository.findById(requesterId)).willReturn(Optional.of(requester));
+            given(postRepository.findById(postId)).willReturn(Optional.of(post));
+            given(profileRepository.findByMember(author)).willReturn(Optional.empty());
+
+            //when & then
+            BusinessException exception = assertThrows(
+                    BusinessException.class,
+                    () -> postService.getPostDetail(requesterId, postId)
+            );
+            assertThat(exception.getErrorCode()).isEqualTo(ProfileErrorCode.PROFILE_NOT_FOUND);
+
+            verify(memberRepository).findById(requesterId);
+            verify(postRepository).findById(postId);
+            verify(profileRepository).findByMember(author);
+        }
+    }
 
     @Nested
     @DisplayName("회원이 작성한 게시글 전체 삭제")
