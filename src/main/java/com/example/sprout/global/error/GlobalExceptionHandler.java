@@ -1,6 +1,7 @@
 package com.example.sprout.global.error;
 
 import com.example.sprout.global.common.response.ApiResponse;
+import jakarta.validation.ConstraintViolationException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -39,6 +40,21 @@ public class GlobalExceptionHandler {
 
         log.error("Validation 실패 - field: {}, reason: {}",
                 fieldError != null ? fieldError.getField() : "unknown", message);
+
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .body(ApiResponse.fail(message));
+    }
+
+    @ExceptionHandler(ConstraintViolationException.class)
+    public ResponseEntity<ApiResponse<Void>> handleConstraintValidation(ConstraintViolationException exception) {
+        String message = exception.getConstraintViolations()
+                .stream()
+                .findFirst()
+                .map(violation -> violation.getMessage())
+                .orElse("잘못된 요청입니다.");
+
+        log.error("Validation 실패 - reason: {}", message);
 
         return ResponseEntity
                 .status(HttpStatus.BAD_REQUEST)
