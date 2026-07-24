@@ -3,6 +3,7 @@ package com.example.sprout.domain.post.dto.request;
 import com.example.sprout.domain.member.entity.Member;
 import com.example.sprout.domain.post.entity.Post;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
 import java.util.List;
@@ -13,7 +14,10 @@ public record CreatePostRequest(
     String title,
     @NotBlank(message = "게시글 내용이 없습니다.")
     String content,
-    List<String> categories
+    List<String> categories,
+    List<String> fileKeys,
+    @NotNull(message = "공개 및 비공개 여부 선택은 필수입니다.")
+    boolean isPrivate
 
 ) {
     public Post toEntity(Member author) {
@@ -21,6 +25,7 @@ public record CreatePostRequest(
                 .author(author)
                 .title(title)
                 .content(content)
+                .isPrivate(isPrivate)
                 .build();
     }
 }

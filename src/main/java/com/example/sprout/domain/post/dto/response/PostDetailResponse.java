@@ -5,28 +5,40 @@ import com.example.sprout.domain.profile.entity.Profile;
 import lombok.Builder;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Builder
-public record PostDetailDto(
+public record PostDetailResponse(
         AuthorDto author,
         Long postId,
         String title,
         String content,
+        List<String> fileKeys,
+        List<String> categories,
         int likeCount,
         boolean isMine,
+        boolean isLike,
         LocalDateTime createdAt,
-        LocalDateTime updatedAt
+        LocalDateTime updatedAt,
+        boolean isUpdated,
+        boolean isPrivate
 ) {
-    public static PostDetailDto of(Post post, Profile authorProfile, boolean isMine, boolean isFollowing) {
-        return PostDetailDto.builder()
+    public static PostDetailResponse of(Post post, Profile authorProfile, List<String> fileKeys , List<String> categories,
+                                        boolean isMine, boolean isFollowing, boolean isLike) {
+        return PostDetailResponse.builder()
                 .author(AuthorDto.of(authorProfile, isFollowing))
                 .postId(post.getId())
                 .title(post.getTitle())
                 .content(post.getContent())
+                .fileKeys(fileKeys)
+                .categories(categories)
                 .likeCount(post.getLikeCount())
                 .isMine(isMine)
+                .isLike(isLike)
                 .createdAt(post.getCreatedAt())
                 .updatedAt(post.getUpdatedAt())
+                .isUpdated(post.isUpdated())
+                .isPrivate(post.isPrivate())
                 .build();
     }
 }
