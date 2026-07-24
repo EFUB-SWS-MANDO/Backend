@@ -12,6 +12,13 @@ import java.util.List;
 public interface PostCategoryRepository extends JpaRepository<PostCategory, Long> {
     List<PostCategory> findAllByPost(Post post);
     void deleteAllByPost(Post post);
+
+    @Query("SELECT pc FROM PostCategory pc " +
+            "JOIN FETCH pc.post " +
+            "JOIN FETCH pc.category " +
+            "WHERE pc.post.id IN :postIds")
+    List<PostCategory> findAllByPostIdIn(@Param("postIds") List<Long> postIds);
+
     @Query("SELECT pc.post.id AS postId, pc.category.type AS type " +
             "FROM PostCategory  pc " +
             "WHERE pc.post.id IN :postIds")

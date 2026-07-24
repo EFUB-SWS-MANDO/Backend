@@ -5,6 +5,7 @@ import com.example.sprout.global.ai.dto.AiChatResponse;
 import com.example.sprout.global.ai.exception.AiCallException;
 import com.example.sprout.global.config.OpenAiProperties;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.MediaType;
@@ -20,6 +21,7 @@ import tools.jackson.databind.ObjectMapper;
 import java.util.HashMap;
 import java.util.Map;
 
+@Slf4j
 @Component
 @RequiredArgsConstructor
 public class OpenAiChatClient implements AiChatClient {
@@ -39,6 +41,8 @@ public class OpenAiChatClient implements AiChatClient {
                 .onStatus(HttpStatusCode::isError, this::handleErrorResponse)
                 .bodyToMono(JsonNode.class)
                 .block(props.timeout().read());
+
+        log.info("OpenAI raw response: {}", result);
 
         String content = result.at("/choices/0/message/content").asText();
         return new AiChatResponse(content);
@@ -67,7 +71,7 @@ public class OpenAiChatClient implements AiChatClient {
         Map<String, Object> body = new HashMap<>();
         body.put("model", props.model());
         body.put("messages", request.messages());
-        body.put("max_tokens", request.maxTokens() != null ? request.maxTokens() : props.defaultMaxToken());
+        body.put("max_completion_tokens", request.maxTokens() != null ? request.maxTokens() : props.defaultMaxToken());
         if (request.temperature() != null) {
             body.put("temperature", request.temperature());
         }
