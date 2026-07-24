@@ -14,6 +14,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -54,5 +55,15 @@ public class ResumeController {
 
         ResumeResponse response = resumeService.getResumeDetail(requesterId, resumeId);
         return ResponseEntity.ok().body(ApiResponse.success("자소서 상세 조회 성공", response));
+    }
+
+    // 자소서 삭제
+    @DeleteMapping("/{resumeId}")
+    public ResponseEntity<ApiResponse<Void>> deleteResume(@AuthMember Long requesterId,
+                                                          @PathVariable Long resumeId) {
+        log.info("자소서 삭제 API 호출 - resumeId: {}", resumeId);
+
+        resumeService.deleteResume(requesterId, resumeId);
+        return ResponseEntity.ok().body(ApiResponse.success("자소서 삭제 성공"));
     }
 }

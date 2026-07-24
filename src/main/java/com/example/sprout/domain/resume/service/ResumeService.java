@@ -119,6 +119,18 @@ public class ResumeService {
         return ResumeResponse.of(resume, resumeDetailItemList);
     }
 
+    // 자소서 삭제
+    @Transactional
+    public void deleteResume(Long requesterId, Long resumeId) {
+        Member requester = getMember(requesterId);
+        Resume resume = getResume(resumeId);
+
+        validateAuthor(requesterId, resume.getAuthor());
+
+        resumeRepository.delete(resume);
+        log.info("자소서 삭제 완료 - resumeId: {}, requesterId: {}", resumeId, requesterId);
+    }
+
     //회원 탈퇴 시 resume 및 resumeDraft 삭제
     @Transactional
     public void deleteByMember(Member member) {
