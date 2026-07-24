@@ -13,7 +13,7 @@ public record PostDetailResponse(
         Long postId,
         String title,
         String content,
-        List<String> fileKeys,
+        List<String> fileUrls,
         List<String> categories,
         int likeCount,
         boolean isMine,
@@ -23,14 +23,14 @@ public record PostDetailResponse(
         boolean isUpdated,
         boolean isPrivate
 ) {
-    public static PostDetailResponse of(Post post, Profile authorProfile, List<String> fileKeys , List<String> categories,
-                                        boolean isMine, boolean isFollowing, boolean isLike) {
+    public static PostDetailResponse of(Post post, AuthorDto author, List<String> fileUrls , List<String> categories,
+                                        boolean isMine, boolean isLike) {
         return PostDetailResponse.builder()
-                .author(AuthorDto.of(authorProfile, isFollowing))
+                .author(author)
                 .postId(post.getId())
                 .title(post.getTitle())
                 .content(post.getContent())
-                .fileKeys(fileKeys)
+                .fileUrls(fileUrls)
                 .categories(categories)
                 .likeCount(post.getLikeCount())
                 .isMine(isMine)

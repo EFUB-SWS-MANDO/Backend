@@ -7,6 +7,7 @@ import com.example.sprout.domain.comment.repository.CommentRepository;
 import com.example.sprout.domain.comment.service.CommentService;
 import com.example.sprout.domain.file.dto.response.MovedFileInfo;
 import com.example.sprout.domain.file.service.S3FileService;
+import com.example.sprout.domain.file.service.S3PresignedUrlService;
 import com.example.sprout.domain.follow.repository.FollowRepository;
 import com.example.sprout.domain.member.entity.Member;
 import com.example.sprout.domain.member.exception.MemberErrorCode;
@@ -34,8 +35,6 @@ import com.example.sprout.domain.profile.repository.ProfileRepository;
 import com.example.sprout.global.error.BusinessException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.cache.annotation.CacheEvict;
-import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -68,6 +67,7 @@ public class PostService {
     private final PostCategoryService postCategoryService;
     private final S3FileService s3FileService;
     private final PostFileService postFileService;
+    private final S3PresignedUrlService s3PresignedUrlService;
 
     private record SummaryLookup(
             Map<Long, Profile> profileMap,
@@ -233,6 +233,12 @@ public class PostService {
         }
     }
 
+    private AuthorDto toAuthorDto (Profile authorProfile, boolean isFollowing) {
+        String profileImage = s3PresignedUrlService.createDownloadUrlOrNull(authorProfile.getProfileImage());
+
+        return AuthorDto.of(authorProfile, profileImage, isFollowing);
+    }
+
     private PostSummaryDto toPostSummary(Post post, Long requesterId, SummaryLookup lookup) {
         Long postId = post.getId();
         Long authorId = post.getAuthor().getId();
@@ -241,9 +247,16 @@ public class PostService {
         //1-AuthorDto 구성
         boolean isMine = requesterId.equals(authorId);
         boolean isFollowing = !isMine && lookup.followingIds().contains(authorId);
-        AuthorDto author = AuthorDto.of(lookup.profileMap().get(authorId), isFollowing);
+        Profile authorProfile = lookup.profileMap().get(authorId);
+        if (authorProfile == null) {
+            log.warn("게시글 작성자 프로필이 존재하지 않음 - postId: {}, authorId: {}", postId, authorId);
+            throw new BusinessException(ProfileErrorCode.PROFILE_NOT_FOUND);
+        }
+        AuthorDto author = toAuthorDto(authorProfile, isFollowing);
+
         //2-카테고리 구성
         List<String> categories = lookup.categoriesMap().getOrDefault(postId, List.of());
+
         //3-좋아요 수, 댓글 수 구성
         boolean isLike = lookup.likedPostIds().contains(postId);
         long commentCount = lookup.commentCountMap().getOrDefault(postId, 0L);
@@ -268,13 +281,17 @@ public class PostService {
         Profile authorProfile = getProfileByMember(author);
 
         List<String> fileKeys = getPostFileKeys(post);
+        List<String> fileUrls = s3PresignedUrlService.createDownloadUrls(fileKeys);
+
         List<String> categories = getPostCategories(post);
 
         boolean isMine = requester.getId().equals(author.getId());
         boolean isFollowing = !isMine && getIsFollowing(requester, author);
         boolean isLike = getIsLike(requester, post);
 
-        return PostDetailResponse.of(post, authorProfile, fileKeys, categories, isMine, isFollowing, isLike);
+        AuthorDto authorDto = toAuthorDto(authorProfile, isFollowing);
+
+        return PostDetailResponse.of(post, authorDto, fileUrls, categories, isMine, isLike);
     }
 
     //private 헬퍼 메소드
