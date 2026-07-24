@@ -253,7 +253,7 @@ public class CommentService {
             return SimpleMemberDto.unknown();
         }
 
-        String profileImage = s3PresignedUrlService.createDownloadUrlOrNull(authorProfile.getFileKey());
+        String profileImage = s3PresignedUrlService.createDownloadUrlOrNull(authorProfile.getProfileImage());
 
         return SimpleMemberDto.of(
                 authorProfile.getMember().getId(),
