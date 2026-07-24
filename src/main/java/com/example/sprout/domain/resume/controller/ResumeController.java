@@ -13,6 +13,10 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 @Slf4j
 @RestController
@@ -40,5 +44,15 @@ public class ResumeController {
 
         GetResumeListResponse response = resumeService.getResumeList(requesterId, condition);
         return ResponseEntity.ok().body(ApiResponse.success("자소서 목록 조회 성공", response));
+    }
+
+    // 자소서 상세 조회
+    @GetMapping("/{resumeId}")
+    public ResponseEntity<ApiResponse<ResumeResponse>> getResumeDetail(@AuthMember Long requesterId,
+                                                                       @PathVariable("resumeId") Long resumeId) {
+        log.info("자소서 상세 조회 API 호출 - resumeId: {}", resumeId);
+
+        ResumeResponse response = resumeService.getResumeDetail(requesterId, resumeId);
+        return ResponseEntity.ok().body(ApiResponse.success("자소서 상세 조회 성공", response));
     }
 }

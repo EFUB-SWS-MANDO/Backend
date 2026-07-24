@@ -105,6 +105,20 @@ public class ResumeService {
         return GetResumeListResponse.of(pageResumeListItem, nextIdAfter, hasNext, totalElements);
     }
 
+    // 자소서 상세 조회
+    @Transactional(readOnly = true)
+    public ResumeResponse getResumeDetail(Long requesterId, Long resumeId) {
+        Member requester = getMember(requesterId);
+        Resume resume = getResume(resumeId);
+
+        validateAuthor(requesterId, resume.getAuthor());
+
+        List<ResumeDetailItem> resumeDetailItemList = resume.getResumeDraftList().stream()
+                .map(ResumeDetailItem::from).toList();
+
+        return ResumeResponse.of(resume, resumeDetailItemList);
+    }
+
     //회원 탈퇴 시 resume 및 resumeDraft 삭제
     @Transactional
     public void deleteByMember(Member member) {
@@ -125,6 +139,15 @@ public class ResumeService {
                 .orElseThrow(() -> {
                     log.error("존재하지 않는 회원 - memberId: {}", memberId);
                     return new BusinessException(MemberErrorCode.MEMBER_NOT_FOUND);
+                });
+    }
+
+    // Resume 조회
+    private Resume getResume(Long resumeId) {
+        return resumeRepository.findById(resumeId)
+                .orElseThrow(() -> {
+                    log.error("존재하지 않는 자기소개서 - resumeId: {}", resumeId);
+                    return new BusinessException(ResumeErrorCode.RESUME_NOT_FOUND);
                 });
     }
 
@@ -230,5 +253,12 @@ public class ResumeService {
     private List<ResumeListItem> toResumeListItem(List<Resume> resumes) {
         return resumes.stream()
                 .map(ResumeListItem::from).toList();
+    }
+
+    // Author == Requester
+    private void validateAuthor(Long requesterId, Member author) {
+        if (!requesterId.equals(author.getId())) {
+            throw new BusinessException(ResumeErrorCode.RESUME_ACCESS_DENIED);
+        }
     }
 }
