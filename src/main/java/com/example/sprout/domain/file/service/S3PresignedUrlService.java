@@ -32,7 +32,10 @@ public class S3PresignedUrlService {
 
     // presignedURL 발급
     public PresignedUrlResponse createPresignedUrl(Long requesterId, PresignedUrlRequest request) {
-        String fileKey = "posts/temp/" + requesterId + "_" + UUID.randomUUID() + "_" + request.fileName();
+        String fileKey = switch (request.uploadType()) {
+            case POST -> "posts/temp/" + requesterId + "_" + UUID.randomUUID() + "_" + request.fileName();
+            case PROFILE -> "profiles/" + requesterId + "/" + UUID.randomUUID() + "_" + request.fileName();
+        };
 
         PutObjectRequest objectRequest = PutObjectRequest.builder()
                 .bucket(bucket)
@@ -71,5 +74,9 @@ public class S3PresignedUrlService {
         return s3Keys.stream()
                 .map(this::createDownloadUrl)
                 .toList();
+    }
+
+    public String createDownloadUrlOrNull (String s3Key) {
+        return s3Key != null ? createDownloadUrl(s3Key) : null;
     }
 }
