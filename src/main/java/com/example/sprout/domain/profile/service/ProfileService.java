@@ -1,5 +1,7 @@
 package com.example.sprout.domain.profile.service;
 
+import com.example.sprout.domain.file.service.S3FileService;
+import com.example.sprout.domain.file.service.S3PresignedUrlService;
 import com.example.sprout.domain.follow.repository.FollowRepository;
 import com.example.sprout.domain.member.entity.Member;
 import com.example.sprout.domain.member.exception.MemberErrorCode;
@@ -16,6 +18,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
+
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -24,6 +28,8 @@ public class ProfileService {
     private final ProfileRepository profileRepository;
     private final MemberRepository memberRepository;
     private final FollowRepository followRepository;
+    private final S3PresignedUrlService s3PresignedUrlService;
+    private final S3FileService s3FileService;
 
     @Transactional
     public ProfileResponse createProfile(Long memberId, CreateProfileRequest request) {
@@ -34,6 +40,9 @@ public class ProfileService {
             log.debug("profile이 이미 존재 - memberId: {}", memberId);
             throw new BusinessException(ProfileErrorCode.PROFILE_ALREADY_EXISTS);
         }
+
+        //생성하는 회원이 보낸 이미지인지 검증
+        validateProfileImageKey(memberId, request.profileImage());
 
         Profile newProfile = request.toEntity(member);
         profileRepository.save(newProfile);
@@ -58,7 +67,17 @@ public class ProfileService {
         Member member = getMemberById(requesterId);
         Profile profile = findProfileByMember(member);
 
+        //생성하는 회원이 보낸 이미지인지 검증
+        validateProfileImageKey(requesterId, request.profileImage());
+
+        String oldImage = profile.getProfileImage();
         profile.updateProfile(request.nickname(), request.profileImage(), request.bio());
+        String newImage = profile.getProfileImage();
+
+        //이미지 수정 시, 기존 이미지 S3에서 삭제
+        if (oldImage != null && !oldImage.equals(newImage)) {
+            s3FileService.deleteFiles(List.of(oldImage));
+        }
 
         log.info("프로필 수정 성공 - requesterId: {}, profileId: {}", requesterId, profile.getId());
         return toProfileResponse(requesterId, member, profile);
@@ -69,13 +88,27 @@ public class ProfileService {
         profileRepository.deleteByMember(member);
     }
 
+    //S3 이미지 key 검증 메소드
+    private void validateProfileImageKey(Long memberId, String profileImage) {
+        if (profileImage == null) return;
+
+        String prefix = "profiles/" + memberId + "/";
+        if (!profileImage.startsWith(prefix)) {
+            log.warn("허용되지 않은 프로필 이미지 key - memberId: {}, key: {}", memberId, profileImage);
+            throw new BusinessException(ProfileErrorCode.INVALID_PROFILE_IMAGE_KEY);
+        }
+    }
+
     private ProfileResponse toProfileResponse (Long requesterId, Member targetMember, Profile profile) {
+
         int followerCount = followRepository.countByFollowee(targetMember);
         int followeeCount = followRepository.countByFollower(targetMember);
         boolean isMe = requesterId.equals(targetMember.getId());
         boolean isFollowing = !isMe && followRepository.existsByFollowerIdAndFolloweeId(requesterId, targetMember.getId());
 
-        return ProfileResponse.of(profile, followerCount, followeeCount, isMe, isFollowing);
+        String profileImageUrl = s3PresignedUrlService.createDownloadUrlOrNull(profile.getProfileImage());
+
+        return ProfileResponse.of(profile, profileImageUrl, followerCount, followeeCount, isMe, isFollowing);
     }
 
     //헬퍼 메소드

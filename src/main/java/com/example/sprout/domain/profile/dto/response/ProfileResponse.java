@@ -15,12 +15,12 @@ public record ProfileResponse (
         boolean isMe,
         boolean isFollowing
 ) {
-    public static ProfileResponse of (Profile profile, int followerCount, int followeeCount,
-                                      boolean isMe, boolean isFollowing) {
+    public static ProfileResponse of (Profile profile, String profileImage,
+                                      int followerCount, int followeeCount, boolean isMe, boolean isFollowing) {
         return ProfileResponse.builder()
                 .memberId(profile.getMember().getId())
                 .nickname(profile.getNickname())
-                .profileImage(profile.getProfileImage())
+                .profileImage(profileImage)
                 .bio(profile.getBio())
                 .followerCount(followerCount)
                 .followeeCount(followeeCount)
