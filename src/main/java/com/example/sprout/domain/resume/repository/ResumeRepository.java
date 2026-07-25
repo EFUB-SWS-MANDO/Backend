@@ -10,4 +10,8 @@ public interface ResumeRepository extends JpaRepository<Resume, Long> {
 
     void deleteAllByAuthor (Member author);
     List<Resume> findAllByAuthor(Member member);
+
+    int countAllByAuthor(Member member);
+
+    List<Resume> findTop4ByAuthorOrderByUpdatedAtDesc(Member member);
 }

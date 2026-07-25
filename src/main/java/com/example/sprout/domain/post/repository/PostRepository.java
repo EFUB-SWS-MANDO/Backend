@@ -9,4 +9,8 @@ import java.util.List;
 public interface PostRepository extends JpaRepository<Post, Long> {
 
     List<Post> findAllByAuthor (Member author);
+
+    int countAllByAuthor(Member member);
+
+    List<Post> findTop4ByAuthorOrderByUpdatedAtDesc(Member member);
 }
