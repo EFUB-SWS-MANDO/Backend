@@ -1,5 +1,7 @@
 package com.example.sprout.domain.profile.service;
 
+import com.example.sprout.domain.file.service.S3FileService;
+import com.example.sprout.domain.file.service.S3PresignedUrlService;
 import com.example.sprout.domain.follow.repository.FollowRepository;
 import com.example.sprout.domain.member.entity.Member;
 import com.example.sprout.domain.member.exception.MemberErrorCode;
@@ -22,6 +24,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
 
+import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -41,6 +44,10 @@ public class ProfileServiceTest {
     private FollowRepository followRepository;
     @Mock
     private MemberRepository memberRepository;
+    @Mock
+    private S3PresignedUrlService s3PresignedUrlService;
+    @Mock
+    private S3FileService s3FileService;
 
     @InjectMocks
     private ProfileService profileService;
@@ -62,7 +69,7 @@ public class ProfileServiceTest {
 
         @BeforeEach
         void setUp() {
-            request = new CreateProfileRequest("nickname","profile.png", "bio");
+            request = new CreateProfileRequest("nickname","profiles/1/profile.png", "bio");
         }
 
         @Test
@@ -231,11 +238,11 @@ public class ProfileServiceTest {
 
         @BeforeEach
         void setUp() {
-            request = new UpdateProfileRequest("update_nickname", "update_profile.png", "update_bio");
+            request = new UpdateProfileRequest("update_nickname", "profiles/1/update_profile.png", "update_bio");
             profile = Profile.builder()
                     .member(member)
                     .nickname("nickname")
-                    .profileImage("profile.png")
+                    .profileImage("profiles/1/profile.png")
                     .bio("bio")
                     .build();
         }
@@ -248,6 +255,8 @@ public class ProfileServiceTest {
             given(profileRepository.findByMember(member)).willReturn(Optional.of(profile));
             given(followRepository.countByFollower(member)).willReturn(10);
             given(followRepository.countByFollowee(member)).willReturn(5);
+            given(s3PresignedUrlService.createDownloadUrlOrNull("profiles/1/update_profile.png"))
+                    .willReturn("https://s3/presigned-new");
 
             //when
             ProfileResponse response = profileService.updateProfile(memberId, request);
@@ -256,7 +265,6 @@ public class ProfileServiceTest {
             assertThat(response).isNotNull();
             assertThat(response.memberId()).isEqualTo(memberId);
             assertThat(response.nickname()).isEqualTo(request.nickname());
-            assertThat(response.profileImage()).isEqualTo(request.profileImage());
             assertThat(response.bio()).isEqualTo(request.bio());
             assertThat(response.followerCount()).isEqualTo(5);
             assertThat(response.followeeCount()).isEqualTo(10);
@@ -264,11 +272,13 @@ public class ProfileServiceTest {
             assertThat(profile.getNickname()).isEqualTo(request.nickname());
             assertThat(profile.getProfileImage()).isEqualTo(request.profileImage());
             assertThat(profile.getBio()).isEqualTo(request.bio());
+            assertThat(response.profileImage()).isEqualTo("https://s3/presigned-new");
 
             verify(memberRepository).findById(memberId);
             verify(profileRepository).findByMember(member);
             verify(followRepository).countByFollower(member);
             verify(followRepository).countByFollowee(member);
+            verify(s3FileService).deleteFiles(List.of("profiles/1/profile.png"));
 
         }
 
@@ -282,6 +292,8 @@ public class ProfileServiceTest {
             given(profileRepository.findByMember(member)).willReturn(Optional.of(profile));
             given(followRepository.countByFollower(member)).willReturn(10);
             given(followRepository.countByFollowee(member)).willReturn(5);
+            given(s3PresignedUrlService.createDownloadUrlOrNull("profiles/1/profile.png"))
+                    .willReturn("https://s3/presigned-old");
 
             //when
             ProfileResponse response = profileService.updateProfile(memberId, partialRequest);
@@ -290,19 +302,20 @@ public class ProfileServiceTest {
             assertThat(response).isNotNull();
             assertThat(response.memberId()).isEqualTo(memberId);
             assertThat(response.nickname()).isEqualTo("nickname");
-            assertThat(response.profileImage()).isEqualTo("profile.png");
+            assertThat(response.profileImage()).isEqualTo("https://s3/presigned-old");
             assertThat(response.bio()).isEqualTo(partialRequest.bio());
             assertThat(response.followerCount()).isEqualTo(5);
             assertThat(response.followeeCount()).isEqualTo(10);
 
             assertThat(profile.getNickname()).isEqualTo("nickname");
-            assertThat(profile.getProfileImage()).isEqualTo("profile.png");
+            assertThat(profile.getProfileImage()).isEqualTo("profiles/1/profile.png");
             assertThat(profile.getBio()).isEqualTo(partialRequest.bio());
 
             verify(memberRepository).findById(memberId);
             verify(profileRepository).findByMember(member);
             verify(followRepository).countByFollower(member);
             verify(followRepository).countByFollowee(member);
+            verify(s3FileService, never()).deleteFiles(any());
         }
 
         @Test
@@ -338,6 +351,25 @@ public class ProfileServiceTest {
 
             verify(memberRepository).findById(memberId);
             verifyNoMoreInteractions(profileRepository, followRepository);
+        }
+
+        @Test
+        @DisplayName("프로필 수정 실패: 본인 소유가 아닌 이미지 key로 수정 시도")
+        void updateProfile_InvalidImageKey_Fail() {
+            //given
+            UpdateProfileRequest badRequest = new UpdateProfileRequest(null, "profiles/999/hack.png", null);
+            given(memberRepository.findById(memberId)).willReturn(Optional.of(member));
+            given(profileRepository.findByMember(member)).willReturn(Optional.of(profile));
+
+            //when & then
+            BusinessException exception = assertThrows(
+                    BusinessException.class,
+                    () -> profileService.updateProfile(memberId, badRequest)
+            );
+            assertThat(exception.getErrorCode()).isEqualTo(ProfileErrorCode.INVALID_PROFILE_IMAGE_KEY);
+
+            verify(s3FileService, never()).deleteFiles(any());
+            verifyNoInteractions(followRepository);
         }
     }
 
