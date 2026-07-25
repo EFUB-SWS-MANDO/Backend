@@ -5,8 +5,6 @@ import com.example.sprout.domain.member.entity.Member;
 import com.example.sprout.domain.member.exception.MemberErrorCode;
 import com.example.sprout.domain.member.repository.MemberRepository;
 import com.example.sprout.domain.profile.dto.request.CreateProfileRequest;
-import com.example.sprout.domain.profile.dto.response.CreateProfileResponse;
-import com.example.sprout.domain.member.service.MemberService;
 import com.example.sprout.domain.profile.dto.request.UpdateProfileRequest;
 import com.example.sprout.domain.profile.dto.response.ProfileResponse;
 import com.example.sprout.domain.profile.entity.Profile;
@@ -28,7 +26,7 @@ public class ProfileService {
     private final FollowRepository followRepository;
 
     @Transactional
-    public CreateProfileResponse createProfile(Long memberId, CreateProfileRequest request) {
+    public ProfileResponse createProfile(Long memberId, CreateProfileRequest request) {
 
         Member member = getMemberById(memberId);
 
@@ -42,7 +40,7 @@ public class ProfileService {
 
         log.info("프로필 생성 성공 - memberId: {}, profileId: {}, nickname: {}, profileImage: {}, bio: {}",
                 memberId, newProfile.getId(), newProfile.getNickname(), newProfile.getProfileImage(), newProfile.getBio());
-        return new CreateProfileResponse(memberId);
+        return toProfileResponse(memberId, member, newProfile);
     }
 
     @Transactional(readOnly = true)
@@ -50,12 +48,9 @@ public class ProfileService {
         Member targetMember = getMemberById(targetMemberId);
 
         Profile profile = findProfileByMember(targetMember);
-        int followerCount = followRepository.countByFollowee(targetMember);
-        int followeeCount = followRepository.countByFollower(targetMember);
-        boolean isMe = targetMember.getId().equals(requesterId);
 
         log.info("프로필 조회 성공 - requesterId: {}, memberId: {}", requesterId, targetMemberId);
-        return ProfileResponse.of(profile, followerCount, followeeCount, isMe);
+        return toProfileResponse(requesterId, targetMember, profile);
     }
 
     @Transactional
@@ -65,16 +60,22 @@ public class ProfileService {
 
         profile.updateProfile(request.nickname(), request.profileImage(), request.bio());
 
-        int followerCount = followRepository.countByFollowee(member);
-        int followeeCount = followRepository.countByFollower(member);
-
         log.info("프로필 수정 성공 - requesterId: {}, profileId: {}", requesterId, profile.getId());
-        return ProfileResponse.of(profile, followerCount, followeeCount, true);
+        return toProfileResponse(requesterId, member, profile);
     }
 
     @Transactional
     public void deleteByMember(Member member) {
         profileRepository.deleteByMember(member);
+    }
+
+    private ProfileResponse toProfileResponse (Long requesterId, Member targetMember, Profile profile) {
+        int followerCount = followRepository.countByFollowee(targetMember);
+        int followeeCount = followRepository.countByFollower(targetMember);
+        boolean isMe = requesterId.equals(targetMember.getId());
+        boolean isFollowing = !isMe && followRepository.existsByFollowerIdAndFolloweeId(requesterId, targetMember.getId());
+
+        return ProfileResponse.of(profile, followerCount, followeeCount, isMe, isFollowing);
     }
 
     //헬퍼 메소드
