@@ -16,7 +16,7 @@ public interface FollowRepository extends JpaRepository<Follow, Long> {
 
     // 영향을 받은 행(Row) 개수를 정수로 반환
     @Modifying
-    @Query("DELETE FROM Follow f WHERE f.follower = :followerId AND f.followee = :followeeId")
+    @Query("DELETE FROM Follow f WHERE f.follower.id = :followerId AND f.followee.id = :followeeId")
     int deleteByFollowerIdAndFolloweeId(
             @Param("followerId") Long followerId,
             @Param("followeeId") Long followeeId
