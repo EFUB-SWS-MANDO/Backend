@@ -35,7 +35,7 @@ public class Post extends BaseTimeEntity {
     @Column(name = "like_count")
     private int likeCount;
 
-    @Column(name = "isPrivate")
+    @Column(name = "is_private", nullable = false)
     private boolean isPrivate;
 
     @Builder
