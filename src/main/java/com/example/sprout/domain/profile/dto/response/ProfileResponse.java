@@ -12,9 +12,11 @@ public record ProfileResponse (
         int followerCount,
         int followeeCount,
         int sproutLevel,
-        boolean isMe
+        boolean isMe,
+        boolean isFollowing
 ) {
-    public static ProfileResponse of (Profile profile, int followerCount, int followeeCount, boolean isMe) {
+    public static ProfileResponse of (Profile profile, int followerCount, int followeeCount,
+                                      boolean isMe, boolean isFollowing) {
         return ProfileResponse.builder()
                 .memberId(profile.getMember().getId())
                 .nickname(profile.getNickname())
@@ -24,6 +26,7 @@ public record ProfileResponse (
                 .followeeCount(followeeCount)
                 .sproutLevel(profile.getSproutLevel())
                 .isMe(isMe)
+                .isFollowing(isFollowing)
                 .build();
     }
 }
