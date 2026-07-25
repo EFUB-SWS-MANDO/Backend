@@ -23,14 +23,28 @@ public class MemberVisitService {
     public void checkVisit(Long memberId) {
         if(!isFirstVisitToday(memberId)) return;
 
-        memberRepository.findById(memberId)
-                .orElseThrow(() -> new BusinessException(MemberErrorCode.MEMBER_NOT_FOUND))
-                .updateVisitStreak();
+        try {
+            memberRepository.findById(memberId)
+                    .orElseThrow(() -> new BusinessException(MemberErrorCode.MEMBER_NOT_FOUND))
+                    .updateVisitStreak();
+        } catch (Exception e) {
+            rollbackVisitMark(memberId);
+            throw e;
+        }
+
+    }
+
+    private String visitKey(Long memberId) {
+        return "visit:" + memberId + ":" + LocalDate.now();
     }
 
     private boolean isFirstVisitToday(Long memberId) {
-        String key = "visit:" + memberId + ":" + LocalDate.now();
-        Boolean result = redisTemplate.opsForValue().setIfAbsent(key, "true", Duration.ofDays(1));
+        Boolean result = redisTemplate.opsForValue()
+                .setIfAbsent(visitKey(memberId), "true", Duration.ofDays(1));
         return Boolean.TRUE.equals(result);
+    }
+
+    private void rollbackVisitMark(Long memberId) {
+        redisTemplate.delete(visitKey(memberId));
     }
 }
