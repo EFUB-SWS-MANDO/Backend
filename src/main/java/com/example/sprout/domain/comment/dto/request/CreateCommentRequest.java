@@ -14,7 +14,7 @@ public record CreateCommentRequest(
         Long parentId,
 
         @NotNull
-        boolean isPrivate
+        Boolean isPrivate
 ) {
     public Comment toEntity(Member author, Post post, Comment parent, boolean isReplyPrivate) {
         return Comment.builder()

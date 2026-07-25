@@ -10,5 +10,5 @@ public record UpdateCommentRequest(
         String content,
 
         @NotNull
-        boolean isPrivate
+        Boolean isPrivate
 ) {}
