@@ -77,6 +77,10 @@ public class InterviewSession extends BaseTimeEntity {
         this.feedback = feedback;
     }
 
+    public boolean hasFeedback() {
+        return feedback != null;
+    }
+
     private void validateCompleted() {
         if (status != InterviewSessionStatus.COMPLETED) {
             throw new BusinessException(InterviewErrorCode.INTERVIEW_NOT_COMPLETED);

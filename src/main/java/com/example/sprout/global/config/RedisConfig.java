@@ -2,7 +2,9 @@ package com.example.sprout.global.config;
 
 import com.example.sprout.domain.category.dto.CategoryDto;
 import com.example.sprout.domain.motivation.entity.Motivation;
+import com.example.sprout.domain.interview.dto.response.InterviewSessionCursorResponse;
 import com.example.sprout.domain.template.dto.TemplateDto;
+import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.redis.cache.RedisCacheConfiguration;
@@ -14,6 +16,7 @@ import tools.jackson.databind.json.JsonMapper;
 
 import java.time.Duration;
 
+@EnableCaching
 @Configuration
 public class RedisConfig {
 
@@ -39,6 +42,10 @@ public class RedisConfig {
         JacksonJsonRedisSerializer<CategoryDto> categoriesSerializer =
                 new JacksonJsonRedisSerializer<>(objectMapper, CategoryDto.class);
 
+        JacksonJsonRedisSerializer<InterviewSessionCursorResponse> interviewSessionCursorSerializer =
+                new JacksonJsonRedisSerializer<>(objectMapper, InterviewSessionCursorResponse.class);
+
+
         JacksonJsonRedisSerializer<Motivation> motivationSerializer =
                 new JacksonJsonRedisSerializer<>(objectMapper, Motivation.class);
 
@@ -62,6 +69,11 @@ public class RedisConfig {
                         "categories",
                         config.entryTtl(Duration.ofDays(7))
                                 .serializeValuesWith(RedisSerializationContext.SerializationPair.fromSerializer(categoriesSerializer))
+                )
+                .withCacheConfiguration(
+                        "interviewSessions",
+                        config.entryTtl(Duration.ofMinutes(30))
+                                .serializeValuesWith(RedisSerializationContext.SerializationPair.fromSerializer(interviewSessionCursorSerializer))
                 )
                 .withCacheConfiguration(
                         "dailyMotivation",

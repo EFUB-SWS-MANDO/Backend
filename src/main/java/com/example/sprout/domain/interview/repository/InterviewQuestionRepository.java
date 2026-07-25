@@ -2,8 +2,19 @@ package com.example.sprout.domain.interview.repository;
 
 import com.example.sprout.domain.interview.entity.InterviewQuestion;
 import com.example.sprout.domain.interview.entity.InterviewSession;
+import com.example.sprout.domain.member.entity.Member;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 public interface InterviewQuestionRepository extends JpaRepository<InterviewQuestion, Long> {
-    void deleteAllBySession(InterviewSession interviewSession);
+
+    @Modifying(clearAutomatically = true)
+    @Query("DELETE FROM InterviewQuestion i WHERE i.session = :session")
+    int deleteAllBySession(@Param("session") InterviewSession interviewSession);
+
+    @Modifying(clearAutomatically = true)
+    @Query("DELETE FROM InterviewQuestion i WHERE i.session.member = :member")
+    int deleteAllByMember(@Param("member") Member member);
 }
