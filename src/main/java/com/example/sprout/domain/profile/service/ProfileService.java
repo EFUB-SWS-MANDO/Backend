@@ -56,7 +56,7 @@ public class ProfileService {
     public ProfileResponse getProfile(Long requesterId, Long targetMemberId) {
         Member targetMember = getMemberById(targetMemberId);
 
-        Profile profile = findProfileByMember(targetMember);
+        Profile profile = getProfileByMember(targetMember);
 
         log.info("프로필 조회 성공 - requesterId: {}, memberId: {}", requesterId, targetMemberId);
         return toProfileResponse(requesterId, targetMember, profile);
@@ -65,7 +65,7 @@ public class ProfileService {
     @Transactional
     public ProfileResponse updateProfile(Long requesterId, UpdateProfileRequest request) {
         Member member = getMemberById(requesterId);
-        Profile profile = findProfileByMember(member);
+        Profile profile = getProfileByMember(member);
 
         //생성하는 회원이 보낸 이미지인지 검증
         validateProfileImageKey(requesterId, request.profileImage());
@@ -85,7 +85,12 @@ public class ProfileService {
 
     @Transactional
     public void deleteByMember(Member member) {
-        profileRepository.deleteByMember(member);
+        profileRepository.findByMember(member)
+                        .ifPresent(profile -> {
+                            String profileImage = profile.getProfileImage();
+                            profileRepository.deleteByMember(member);
+                            if (profileImage != null) s3FileService.deleteFiles(List.of(profileImage));
+                        });
     }
 
     //S3 이미지 key 검증 메소드
@@ -112,7 +117,7 @@ public class ProfileService {
     }
 
     //헬퍼 메소드
-    public Profile findProfileByMember(Member member) {
+    public Profile getProfileByMember(Member member) {
         return profileRepository.findByMember(member)
                 .orElseThrow(() -> {
                     log.debug("존재하지 않는 프로필 조회 시도 - memberId: {}", member.getId());
