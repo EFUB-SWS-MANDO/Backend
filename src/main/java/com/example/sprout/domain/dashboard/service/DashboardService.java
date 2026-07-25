@@ -57,7 +57,7 @@ public class DashboardService {
     // 통계, 기록 (게시글 수, 좋아요 수, 연속 접속일, 모의면접 수, 자소서 수) DTO 반환
     private DashboardStatisticsResponse getStatistics(Member member) {
         int postCount = postRepository.countAllByAuthor(member);
-        int likeCount = 1; // TODO: 추후 PostLikeRepository 구현 PR 머지 후 구현
+        long likeCount = 1L; // TODO: 추후 PostLikeRepository 구현 PR 머지 후 구현
         int loginStreak = member.getVisitStreak();
         int interviewCount = interviewSessionRepository.countAllByMember(member);
         int resumeCount = resumeRepository.countAllByAuthor(member);

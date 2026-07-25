@@ -5,7 +5,7 @@ public record DashboardStatisticsResponse(
         long receivedLikeCount,
         int attendanceStreak,
         int interviewCount,
-        long resumeCount
+        int resumeCount
 ) {
     public static DashboardStatisticsResponse of(
             int postCount, long receivedLikeCount, int attendanceStreak, int interviewCount, int resumeCount
