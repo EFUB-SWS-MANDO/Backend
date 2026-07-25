@@ -5,6 +5,7 @@ import com.example.sprout.domain.auth.security.CustomUserDetails;
 import com.example.sprout.domain.interview.dto.response.InterviewSessionCursorResponse;
 import com.example.sprout.domain.interview.dto.response.InterviewSessionSummaryResponse;
 import com.example.sprout.domain.interview.service.InterviewSessionService;
+import com.example.sprout.domain.member.service.MemberVisitService;
 import com.example.sprout.global.error.GlobalExceptionHandler;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
@@ -53,6 +54,9 @@ public class InterviewSessionControllerTest {
 
     @MockitoBean
     private InterviewSessionService interviewSessionService;
+
+    @MockitoBean
+    private MemberVisitService memberVisitService;
 
     @TestConfiguration
     static class AuthMemberResolverConfig implements WebMvcConfigurer {
