@@ -6,7 +6,6 @@ import com.example.sprout.domain.member.exception.MemberErrorCode;
 import com.example.sprout.domain.member.repository.MemberRepository;
 import com.example.sprout.domain.profile.dto.request.CreateProfileRequest;
 import com.example.sprout.domain.profile.dto.request.UpdateProfileRequest;
-import com.example.sprout.domain.profile.dto.response.CreateProfileResponse;
 import com.example.sprout.domain.profile.dto.response.ProfileResponse;
 import com.example.sprout.domain.profile.entity.Profile;
 import com.example.sprout.domain.profile.exception.ProfileErrorCode;
@@ -77,7 +76,7 @@ public class ProfileServiceTest {
                     .willAnswer(invocation -> invocation.getArgument(0));
 
             //when
-            CreateProfileResponse response = profileService.createProfile(memberId, request);
+            ProfileResponse response = profileService.createProfile(memberId, request);
 
             //then
             assertThat(response).isNotNull();
