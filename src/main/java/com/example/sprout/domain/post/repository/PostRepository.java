@@ -38,4 +38,7 @@ public interface PostRepository extends JpaRepository<Post, Long>, PostRepositor
     int countAllByAuthor(Member member);
 
     List<Post> findTop4ByAuthorOrderByUpdatedAtDesc(Member member);
+
+    @Query("SELECT COALESCE(SUM(p.likeCount), 0) FROM Post p WHERE p.author = :author")
+    long sumLikeCountByAuthor(@Param("author") Member member);
 }

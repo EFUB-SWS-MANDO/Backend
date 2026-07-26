@@ -115,7 +115,7 @@ public class DashboardServiceTest {
             given(motivationService.getDailyMotivation()).willReturn(motivation);
 
             given(postRepository.countAllByAuthor(requester)).willReturn(1);
-            // TODO: PostLikeRepository 구현 PR 머지 후 테스트 코드 추가
+            given(postRepository.sumLikeCountByAuthor(requester)).willReturn(1L);
             given(interviewSessionRepository.countAllByMember(requester)).willReturn(1);
             given(resumeRepository.countAllByAuthor(requester)).willReturn(1);
 
@@ -155,7 +155,7 @@ public class DashboardServiceTest {
             given(motivationService.getDailyMotivation()).willReturn(motivation);
 
             given(postRepository.countAllByAuthor(requester)).willReturn(1);
-            // TODO: PostLikeRepository 구현 PR 머지 후 테스트 코드 추가
+            given(postRepository.sumLikeCountByAuthor(requester)).willReturn(1L);
             given(interviewSessionRepository.countAllByMember(requester)).willReturn(1);
             given(resumeRepository.countAllByAuthor(requester)).willReturn(1);
 
