@@ -1,9 +1,8 @@
-package com.example.sprout.domain.motivation.sevice;
+package com.example.sprout.domain.motivation.service;
 
 import com.example.sprout.domain.motivation.entity.Motivation;
 import com.example.sprout.domain.motivation.exception.MotivationErrorCode;
 import com.example.sprout.domain.motivation.repository.MotivationRepository;
-import com.example.sprout.domain.motivation.service.MotivationService;
 import com.example.sprout.global.error.BusinessException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
