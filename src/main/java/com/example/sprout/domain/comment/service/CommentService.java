@@ -59,6 +59,8 @@ public class CommentService {
         validateAuthorInPrivatePost(author.getId(), post);
 
         Comment parent = resolveParent(request.parentId(), postId);
+        // 부모 댓글이 비공개이면 대댓글을 공개로 설정할 수 없음
+        validateReplyPrivacyAgainstParent(parent, request.isPrivate());
 
         SimpleMemberDto simpleMemberDto = toSimpleMemberDto(authorProfile, true, false);
 
@@ -137,6 +139,9 @@ public class CommentService {
         // requester == comment author랑 일치 여부 확인
         validateAuthor(requester, comment);
         validateNotDeleted(comment);
+
+        // 부모 댓글이 비공개 상태일 때 대댓글이 비공개 -> 공개 처리 하지 못하도록 검증
+        validateReplyPrivacyAgainstParent(comment.getParent(), request.isPrivate());
 
         comment.updateComment(request.content(), request.isPrivate());
 
@@ -331,6 +336,12 @@ public class CommentService {
             Long authorId = (comment.getAuthor() != null) ? comment.getAuthor().getId() : null;
             log.error("댓글 작성자가 아닙니다. - memberId, authorId: {}, {}", member.getId(), authorId);
             throw new BusinessException(CommentErrorCode.COMMENT_ACCESS_DENIED);
+        }
+    }
+
+    private void validateReplyPrivacyAgainstParent(Comment parent, boolean requestIsPrivate) {
+        if (parent != null && parent.isPrivate() && !requestIsPrivate) {
+            throw new BusinessException(CommentErrorCode.CANNOT_MAKE_REPLY_PUBLIC_WHEN_PARENT_PRIVATE);
         }
     }
 
