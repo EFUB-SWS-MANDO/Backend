@@ -5,6 +5,7 @@ import com.example.sprout.domain.interview.enums.InterviewSessionType;
 import com.example.sprout.domain.member.entity.Member;
 import com.example.sprout.domain.member.enums.OauthProvider;
 import com.example.sprout.global.config.JpaAuditingConfig;
+import com.example.sprout.global.config.QuerydslConfig;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -26,7 +27,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 @DataJpaTest
 @Testcontainers
-@Import(JpaAuditingConfig.class)
+@Import({JpaAuditingConfig.class, QuerydslConfig.class})
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 public class InterviewSessionRepositoryTest {
 
