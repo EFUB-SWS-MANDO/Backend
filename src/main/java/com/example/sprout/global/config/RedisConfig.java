@@ -1,8 +1,10 @@
 package com.example.sprout.global.config;
 
 import com.example.sprout.domain.category.dto.CategoryDto;
+import com.example.sprout.domain.post.dto.response.PostListResponse;
 import com.example.sprout.domain.motivation.entity.Motivation;
 import com.example.sprout.domain.interview.dto.response.InterviewSessionCursorResponse;
+import com.example.sprout.domain.post.dto.response.PostListResponse;
 import com.example.sprout.domain.template.dto.TemplateDto;
 import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.context.annotation.Bean;
@@ -45,6 +47,8 @@ public class RedisConfig {
         JacksonJsonRedisSerializer<InterviewSessionCursorResponse> interviewSessionCursorSerializer =
                 new JacksonJsonRedisSerializer<>(objectMapper, InterviewSessionCursorResponse.class);
 
+        JacksonJsonRedisSerializer<PostListResponse> postListSerializer =
+                new JacksonJsonRedisSerializer<>(objectMapper, PostListResponse.class);
 
         JacksonJsonRedisSerializer<Motivation> motivationSerializer =
                 new JacksonJsonRedisSerializer<>(objectMapper, Motivation.class);
@@ -79,6 +83,11 @@ public class RedisConfig {
                         "dailyMotivation",
                         config.entryTtl(Duration.ofHours(24))
                                 .serializeValuesWith(RedisSerializationContext.SerializationPair.fromSerializer(motivationSerializer))
+                )
+                .withCacheConfiguration(
+                        "postsFirstPage",
+                        config.entryTtl(Duration.ofMinutes(5))
+                                .serializeValuesWith(RedisSerializationContext.SerializationPair.fromSerializer(postListSerializer))
                 )
                 .build();
     }

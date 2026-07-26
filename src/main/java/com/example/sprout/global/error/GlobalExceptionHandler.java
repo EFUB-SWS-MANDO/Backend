@@ -5,6 +5,7 @@ import jakarta.validation.ConstraintViolationException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.BindException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -55,6 +56,21 @@ public class GlobalExceptionHandler {
                 .orElse("잘못된 요청입니다.");
 
         log.error("Validation 실패 - reason: {}", message);
+
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .body(ApiResponse.fail(message));
+    }
+
+    @ExceptionHandler(BindException.class)
+    public ResponseEntity<ApiResponse<Void>> handleBindException(BindException exception) {
+        FieldError fieldError = exception.getBindingResult().getFieldError();
+        String message = fieldError != null ?
+                String.format("'%s' 요청 값이 올바르지 않습니다.", fieldError.getField()) : "잘못된 요청입니다.";
+
+        log.error("Binding 실패 - field: {}, rejectedValue: {}",
+                fieldError != null ? fieldError.getField() : "unknown",
+                fieldError != null ? fieldError.getRejectedValue() : "unknown");
 
         return ResponseEntity
                 .status(HttpStatus.BAD_REQUEST)

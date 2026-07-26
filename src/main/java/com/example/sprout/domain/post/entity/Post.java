@@ -47,7 +47,4 @@ public class Post extends BaseTimeEntity {
         if(title != null) this.title = title;
         if(content != null) this.content = content;
     }
-
-    public void addLikeCount() {this.likeCount += 1;}
-    public void removeLikeCount() {this.likeCount -= 1;}
 }
