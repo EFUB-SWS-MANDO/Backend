@@ -74,8 +74,11 @@ public class Comment extends BaseTimeEntity {
 
     // 댓글 가시성 판단
     public boolean isVisible(Long viewerId, Long postAuthorId) {
+        // 부모의 공개 여부에 따라 자식 댓글의 가시성 판단
+        boolean effectivePrivate = this.isPrivate
+                || (this.parent != null && this.parent.isPrivate());
         // 공개 댓글
-        if (!this.isPrivate) {
+        if (!effectivePrivate) {
             return true;
         }
         if (viewerId == null) {
@@ -101,11 +104,6 @@ public class Comment extends BaseTimeEntity {
     public void updateComment(String content, boolean isPrivate) {
         this.content = content;
         this.isPrivate = isPrivate;
-    }
-
-    // 대댓글 강제 비공개 처리
-    public void forcePrivate() {
-        this.isPrivate = true;
     }
 
     // 댓글 삭제
