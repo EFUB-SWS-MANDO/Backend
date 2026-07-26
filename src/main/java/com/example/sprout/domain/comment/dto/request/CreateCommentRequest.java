@@ -22,7 +22,7 @@ public record CreateCommentRequest(
                 .post(post)
                 .parent(parent)
                 .content(content)
-                .isPrivate(parent != null ? isReplyPrivate : isPrivate)
+                .isPrivate(isReplyPrivate)
                 .build();
     }
 }
