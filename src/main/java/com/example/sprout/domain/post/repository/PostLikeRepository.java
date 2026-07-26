@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 
 import java.util.List;
+import java.util.Optional;
 
 public interface PostLikeRepository extends JpaRepository<PostLike, Long> {
 
@@ -16,4 +17,7 @@ public interface PostLikeRepository extends JpaRepository<PostLike, Long> {
             "FROM PostLike pl " +
             "WHERE pl.member.id = :requesterId AND pl.post.id IN :postIds")
     List<Long> findLikedPostIdsByMemberIdAndPostIdIn(Long requesterId, List<Long> postIds);
+
+    boolean existsByMemberAndPost(Member member, Post post);
+    long deleteByMemberAndPost(Member member, Post post);
 }

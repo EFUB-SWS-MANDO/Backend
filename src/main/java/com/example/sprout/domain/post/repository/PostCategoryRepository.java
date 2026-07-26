@@ -9,8 +9,6 @@ import org.springframework.data.repository.query.Param;
 
 import java.util.List;
 
-import java.util.List;
-
 public interface PostCategoryRepository extends JpaRepository<PostCategory, Long> {
     List<PostCategory> findAllByPost(Post post);
     void deleteAllByPost(Post post);

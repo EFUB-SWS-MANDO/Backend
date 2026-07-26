@@ -1,6 +1,7 @@
 package com.example.sprout.global.config;
 
 import com.example.sprout.domain.category.dto.CategoryDto;
+import com.example.sprout.domain.post.dto.response.PostListResponse;
 import com.example.sprout.domain.interview.dto.response.InterviewSessionCursorResponse;
 import com.example.sprout.domain.post.dto.response.PostListResponse;
 import com.example.sprout.domain.template.dto.TemplateDto;
