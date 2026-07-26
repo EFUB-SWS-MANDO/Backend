@@ -5,12 +5,12 @@ import com.example.sprout.domain.comment.dto.response.CommentResponse;
 import com.example.sprout.domain.comment.entity.Comment;
 import com.example.sprout.domain.comment.exception.CommentErrorCode;
 import com.example.sprout.domain.comment.repository.CommentRepository;
+import com.example.sprout.domain.file.service.S3PresignedUrlService;
 import com.example.sprout.domain.member.entity.Member;
 import com.example.sprout.domain.member.enums.OauthProvider;
 import com.example.sprout.domain.member.exception.MemberErrorCode;
 import com.example.sprout.domain.member.repository.MemberRepository;
 import com.example.sprout.domain.post.entity.Post;
-import com.example.sprout.domain.post.repository.PostRepository;
 import com.example.sprout.domain.profile.entity.Profile;
 import com.example.sprout.domain.profile.repository.ProfileRepository;
 import com.example.sprout.global.error.BusinessException;
@@ -25,7 +25,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.time.LocalDateTime;
-import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.*;
@@ -45,13 +44,18 @@ class CommentServiceUpdateTest {
     @Mock
     private CommentRepository commentRepository;
 
+    @Mock
+    private S3PresignedUrlService s3PresignedUrlService;
+
     @InjectMocks
     private CommentService commentService;
 
     private Long requesterId;
+    private Long otherMemberId;
     private Long commentId;
 
     private Member requester;
+    private Member otherMember;
     private Profile profile;
     private Post post;
     private Comment comment;
@@ -61,6 +65,7 @@ class CommentServiceUpdateTest {
     void setUp() {
 
         requesterId = 1L;
+        otherMemberId = 2L;
         commentId = 100L;
 
         requester = Member.builder()
@@ -68,6 +73,12 @@ class CommentServiceUpdateTest {
                 .oauthProvider(OauthProvider.KAKAO)
                 .build();
         ReflectionTestUtils.setField(requester, "id", requesterId);
+
+        otherMember = Member.builder()
+                .oauthId("23456")
+                .oauthProvider(OauthProvider.KAKAO)
+                .build();
+        ReflectionTestUtils.setField(otherMember, "id", otherMemberId);
 
         profile = Profile.builder()
                 .member(requester)
@@ -102,67 +113,22 @@ class CommentServiceUpdateTest {
         @DisplayName("작성자 본인이 요청하면 댓글 내용이 수정된다")
         void updateComment_success() {
 
-            given(memberRepository.findById(requesterId))
-                    .willReturn(Optional.of(requester));
+            given(memberRepository.findById(requesterId)).willReturn(Optional.of(requester));
+            given(commentRepository.findById(commentId)).willReturn(Optional.of(comment));
+            given(profileRepository.findByMember(requester)).willReturn(Optional.of(profile));
+            given(s3PresignedUrlService.createDownloadUrlOrNull("image.png"))
+                    .willReturn("https://presigned-url.example.com/image.png");  // 추가
 
-            given(commentRepository.findById(commentId))
-                    .willReturn(Optional.of(comment));
-
-            given(profileRepository.findByMember(requester))
-                    .willReturn(Optional.of(profile));
-
-            CommentResponse response =
-                    commentService.updateComment(requesterId, commentId, request);
+            CommentResponse response = commentService.updateComment(requesterId, commentId, request);
 
             assertThat(comment.getContent()).isEqualTo("수정된 댓글");
             assertThat(response.commentId()).isEqualTo(commentId);
             assertThat(response.content()).isEqualTo("수정된 댓글");
             assertThat(response.author().memberId()).isEqualTo(requesterId);
             assertThat(response.author().nickname()).isEqualTo("테스터");
-            assertThat(response.author().profileImage()).isEqualTo("image.png");
+            assertThat(response.author().profileImage())
+                    .isEqualTo("https://presigned-url.example.com/image.png");  // 기대값 변경
         }
-    }
-
-    @Test
-    @DisplayName("공개 -> 비공개로 수정 시 대댓글도 강제 비공개 처리된다")
-    void updateComment_cascadesPrivacyToChildren() {
-        Comment child1 = Comment.builder()
-                .author(requester).post(post).parent(comment)
-                .content("대댓글1").isPrivate(false).build();
-        ReflectionTestUtils.setField(child1, "id", 101L);
-
-        Comment child2 = Comment.builder()
-                .author(requester).post(post).parent(comment)
-                .content("대댓글2").isPrivate(false).build();
-        ReflectionTestUtils.setField(child2, "id", 102L);
-
-        given(memberRepository.findById(requesterId)).willReturn(Optional.of(requester));
-        given(commentRepository.findById(commentId)).willReturn(Optional.of(comment));
-        given(profileRepository.findByMember(requester)).willReturn(Optional.of(profile));
-        given(commentRepository.findChildrenByThreadRootIds(List.of(commentId))).willReturn(List.of(child1, child2));
-
-        UpdateCommentRequest toPrivate = new UpdateCommentRequest("수정된 댓글", true);
-        CommentResponse response = commentService.updateComment(requesterId, commentId, toPrivate);
-
-        assertThat(comment.isPrivate()).isTrue();
-        assertThat(child1.isPrivate()).isTrue();
-        assertThat(child2.isPrivate()).isTrue();
-        assertThat(response.isPrivate()).isTrue();
-    }
-
-    @Test
-    @DisplayName("이미 비공개인 댓글을 비공개로 다시 저장해도 자식 조회가 발생하지 않는다")
-    void updateComment_alreadyPrivate_doesNotRefetchChildren() {
-        ReflectionTestUtils.setField(comment, "isPrivate", true);
-
-        given(memberRepository.findById(requesterId)).willReturn(Optional.of(requester));
-        given(commentRepository.findById(commentId)).willReturn(Optional.of(comment));
-        given(profileRepository.findByMember(requester)).willReturn(Optional.of(profile));
-
-        UpdateCommentRequest stillPrivate = new UpdateCommentRequest("수정된 댓글", true);
-        commentService.updateComment(requesterId, commentId, stillPrivate);
-
-        verify(commentRepository, never()).findChildrenByThreadRootIds(any());
     }
 
     @Nested
@@ -261,29 +227,37 @@ class CommentServiceUpdateTest {
         }
 
         @Test
-        @DisplayName("부모 댓글이 비공개면 대댓글을 공개로 전환할 수 없다")
-        void updateComment_cannotMakeReplyPublicWithParentPrivate() {
+        @DisplayName("부모가 비공개면 자식이 공개로 저장돼 있어도 타인에게는 보이지 않는다")
+        void isVisible_parentPrivate_childStoredPublic() {
+            Long viewerId = 999L;
+            Long postAuthorId = requesterId;
+
             Comment parent = Comment.builder()
-                    .author(requester).post(post).parent(null)
-                    .content("부모 댓글").isPrivate(true).build();
-            ReflectionTestUtils.setField(parent, "id", 200L);
+                    .author(otherMember).post(post).parent(null)
+                    .content("부모").isPrivate(true).build();
+            Comment child = Comment.builder()
+                    .author(otherMember).post(post).parent(parent)
+                    .content("자식").isPrivate(false).build(); // 자식 자체는 공개로 저장
 
-            Comment reply = Comment.builder()
-                    .author(requester).post(post).parent(parent)
-                    .content("대댓글").isPrivate(true).build();
-            ReflectionTestUtils.setField(reply, "id", 201L);
+            boolean visible = child.isVisible(viewerId, postAuthorId); // 제3자
+            assertThat(visible).isFalse(); // 부모가 비공개라 여전히 안 보임
+        }
 
-            given(memberRepository.findById(requesterId)).willReturn(Optional.of(requester));
-            given(commentRepository.findById(201L)).willReturn(Optional.of(reply));
+        @Test
+        @DisplayName("부모가 다시 공개로 바뀌면 자식의 원래 공개 설정이 그대로 복원된다")
+        void isVisible_parentBackToPublic_childRestoresOriginalSetting() {
+            Long viewerId = 999L;
+            Long postAuthorId = requesterId;
 
-            UpdateCommentRequest tryPublic = new UpdateCommentRequest("공개로 바꾸기", false);
+            Comment parent = Comment.builder()
+                    .author(otherMember).post(post).parent(null)
+                    .content("부모").isPrivate(false).build(); // 다시 공개로
+            Comment child = Comment.builder()
+                    .author(otherMember).post(post).parent(parent)
+                    .content("자식").isPrivate(false).build(); // 원래 공개로 저장돼 있던 값
 
-            assertThatThrownBy(() -> commentService.updateComment(requesterId, 201L, tryPublic))
-                    .isInstanceOf(BusinessException.class)
-                    .satisfies(e -> assertThat(((BusinessException) e).getErrorCode())
-                            .isEqualTo(CommentErrorCode.CANNOT_MAKE_REPLY_PUBLIC_WHEN_PARENT_PRIVATE));
-
-            verify(profileRepository, never()).findByMember(any());
+            boolean visible = child.isVisible(viewerId, postAuthorId);
+            assertThat(visible).isTrue(); // 별도 로직 없이 자연스럽게 복원됨
         }
     }
 }

@@ -5,6 +5,7 @@ import com.example.sprout.domain.comment.dto.response.GetCommentListResponse;
 import com.example.sprout.domain.comment.entity.Comment;
 import com.example.sprout.domain.comment.exception.CommentErrorCode;
 import com.example.sprout.domain.comment.repository.CommentRepository;
+import com.example.sprout.domain.file.service.S3PresignedUrlService;
 import com.example.sprout.domain.member.entity.Member;
 import com.example.sprout.domain.member.enums.OauthProvider;
 import com.example.sprout.domain.member.repository.MemberRepository;
@@ -40,6 +41,7 @@ class CommentServiceGetListTest {
     @Mock private ProfileRepository profileRepository;
     @Mock private PostRepository postRepository;
     @Mock private CommentRepository commentRepository;
+    @Mock private S3PresignedUrlService s3PresignedUrlService;
 
     @InjectMocks
     private CommentService commentService;
@@ -68,6 +70,10 @@ class CommentServiceGetListTest {
 
         given(memberRepository.findById(viewerId)).willReturn(Optional.of(viewer));
         given(postRepository.findById(postId)).willReturn(Optional.of(post));
+
+        // S3 presigned URL 변환 - 입력값 기반으로 매핑해서 나중에 검증도 가능하게 처리
+        lenient().when(s3PresignedUrlService.createDownloadUrlOrNull(any()))
+                .thenAnswer(invocation -> "url:" + invocation.getArgument(0));
     }
 
     private Member member(Long id, String oauthId) {
@@ -144,6 +150,36 @@ class CommentServiceGetListTest {
 
             assertThat(response.hasNext()).isFalse();
             assertThat(response.totalElements()).isEqualTo(3L);
+        }
+
+        @Test
+        @DisplayName("부모가 비공개면 자식이 공개로 저장돼 있어도 목록에서 마스킹된다")
+        void getCommentList_parentPrivate_childStoredPublic_masked() {
+            // parent(비공개, 작성자=otherMember) - child(공개로 저장, 작성자=otherMember)
+            Comment parent = Comment.builder()
+                    .author(otherMember).post(post).parent(null)
+                    .content("비공개 부모").isPrivate(true).build();
+            ReflectionTestUtils.setField(parent, "id", 300L);
+
+            Comment child = Comment.builder()
+                    .author(otherMember).post(post).parent(parent)
+                    .content("원래 공개였던 대댓글").isPrivate(false).build(); // 자식 필드 자체는 공개로 저장됨
+            ReflectionTestUtils.setField(child, "id", 301L);
+
+            given(commentRepository.findParentCommentsByPostId(eq(postId), isNull(), any(Pageable.class)))
+                    .willReturn(List.of(parent));
+            given(commentRepository.findChildrenByThreadRootIds(List.of(300L)))
+                    .willReturn(List.of(child));
+            given(commentRepository.countByPostIdAndParentIsNull(postId)).willReturn(1L);
+            given(profileRepository.findByMemberIn(anyList()))
+                    .willReturn(List.of(profileOf(otherMember, "타인")));
+
+            // viewer(20L)는 게시글 작성자도, 부모/자식 작성자도 아닌 제3자
+            GetCommentListResponse response = commentService.getCommentList(viewerId, postId, null, 10);
+
+            var childItem = findById(response.comments(), 301L);
+            assertThat(childItem.commentResponse().content()).isEqualTo("비밀댓글입니다.");
+            assertThat(childItem.commentResponse().author().nickname()).isEqualTo("알 수 없음");
         }
 
         @Test

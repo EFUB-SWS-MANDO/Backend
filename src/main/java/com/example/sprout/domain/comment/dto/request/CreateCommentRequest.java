@@ -16,13 +16,13 @@ public record CreateCommentRequest(
         @NotNull
         Boolean isPrivate
 ) {
-    public Comment toEntity(Member author, Post post, Comment parent, boolean isReplyPrivate) {
+    public Comment toEntity(Member author, Post post, Comment parent) {
         return Comment.builder()
                 .author(author)
                 .post(post)
                 .parent(parent)
                 .content(content)
-                .isPrivate(isReplyPrivate)
+                .isPrivate(isPrivate)
                 .build();
     }
 }
