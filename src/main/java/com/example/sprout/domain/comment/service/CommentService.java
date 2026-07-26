@@ -59,12 +59,11 @@ public class CommentService {
         validateAuthorInPrivatePost(author.getId(), post);
 
         Comment parent = resolveParent(request.parentId(), postId);
-        boolean isReplyPrivate = parent != null ? parent.isPrivate() || request.isPrivate() : request.isPrivate();
 
         SimpleMemberDto simpleMemberDto = toSimpleMemberDto(authorProfile, true, false);
 
 
-        Comment newComment = request.toEntity(author, post, parent, isReplyPrivate);
+        Comment newComment = request.toEntity(author, post, parent);
         commentRepository.save(newComment);
 
         log.info("댓글 생성 성공");
@@ -128,9 +127,7 @@ public class CommentService {
     // 댓글 수정
     @Transactional
     public CommentResponse updateComment(Long requesterId, Long commentId, UpdateCommentRequest request) {
-        // 멤버 조회
         Member requester = getMember(requesterId);
-        // 댓글 조회
         Comment comment = getComment(commentId);
         Post post = comment.getPost();
 
@@ -141,25 +138,13 @@ public class CommentService {
         validateAuthor(requester, comment);
         validateNotDeleted(comment);
 
-        // 부모 댓글이 비공개 상태일 때 대댓글이 비공개 -> 공개 처리 하지 못하도록 검증
-        validatePrivateToPublic(comment, request);
-
-        // 댓글 수정
-        boolean wasPrivate = comment.isPrivate();
         comment.updateComment(request.content(), request.isPrivate());
-
-        // 최상위 댓글 공개 -> 비공개 수정인 경우 대댓글도 강제 비공개 처리
-        if (comment.getParent() == null && !wasPrivate && comment.isPrivate()) {
-            commentRepository.findChildrenByThreadRootIds(List.of(comment.getId()))
-                    .forEach(Comment::forcePrivate);
-        }
 
         // 작성자 프로필 조회
         Profile authorProfile = getProfile(requester);
 
         boolean isVisible = comment.isVisible(requesterId, post.getAuthor().getId());
         SimpleMemberDto simpleMemberDto = toSimpleMemberDto(authorProfile, isVisible, comment.isDeleted());
-
 
         log.info("댓글 수정 성공 - commentId: {}", commentId);
 
@@ -346,12 +331,6 @@ public class CommentService {
             Long authorId = (comment.getAuthor() != null) ? comment.getAuthor().getId() : null;
             log.error("댓글 작성자가 아닙니다. - memberId, authorId: {}, {}", member.getId(), authorId);
             throw new BusinessException(CommentErrorCode.COMMENT_ACCESS_DENIED);
-        }
-    }
-
-    private void validatePrivateToPublic(Comment comment, UpdateCommentRequest request) {
-        if (comment.getParent() != null && comment.getParent().isPrivate() && !request.isPrivate()) {
-            throw new BusinessException(CommentErrorCode.CANNOT_MAKE_REPLY_PUBLIC_WHEN_PARENT_PRIVATE);
         }
     }
 
