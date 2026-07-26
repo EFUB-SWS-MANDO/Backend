@@ -112,7 +112,7 @@ public class PostRepositoryImpl implements PostRepositoryCustom {
 
     private BooleanExpression keywordContains (String keyword) {
         return (keyword == null || keyword.isBlank()) ?
-                null : post.title.contains(keyword).or(post.content.containsIgnoreCase(keyword));
+                null : post.title.containsIgnoreCase(keyword).or(post.content.containsIgnoreCase(keyword));
     }
 
     //팔로우 중인 작성자들의 게시글만 조회
