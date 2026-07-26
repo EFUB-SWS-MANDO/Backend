@@ -29,6 +29,9 @@ dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-webflux'
 	implementation 'com.querydsl:querydsl-jpa:5.1.0:jakarta'
 
+	implementation platform('software.amazon.awssdk:bom:2.25.11')
+	implementation 'software.amazon.awssdk:s3'
+
 	compileOnly 'org.projectlombok:lombok'
 
 	runtimeOnly 'org.postgresql:postgresql'
