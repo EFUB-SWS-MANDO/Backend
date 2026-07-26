@@ -12,18 +12,21 @@ public record ProfileResponse (
         int followerCount,
         int followeeCount,
         int sproutLevel,
-        boolean isMe
+        boolean isMe,
+        boolean isFollowing
 ) {
-    public static ProfileResponse of (Profile profile, int followerCount, int followeeCount, boolean isMe) {
+    public static ProfileResponse of (Profile profile, String profileImage,
+                                      int followerCount, int followeeCount, boolean isMe, boolean isFollowing) {
         return ProfileResponse.builder()
                 .memberId(profile.getMember().getId())
                 .nickname(profile.getNickname())
-                .profileImage(profile.getProfileImage())
+                .profileImage(profileImage)
                 .bio(profile.getBio())
                 .followerCount(followerCount)
                 .followeeCount(followeeCount)
                 .sproutLevel(profile.getSproutLevel())
                 .isMe(isMe)
+                .isFollowing(isFollowing)
                 .build();
     }
 }

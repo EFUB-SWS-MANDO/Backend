@@ -35,12 +35,16 @@ public class Post extends BaseTimeEntity {
     @Column(name = "like_count")
     private int likeCount;
 
+    @Column(name = "isPrivate")
+    private boolean isPrivate;
+
     @Builder
-    public Post(Member author, String title, String content) {
+    public Post(Member author, String title, String content, boolean isPrivate) {
         this.author = author;
         this.title = title;
         this.content = content;
         this.likeCount = 0;
+        this.isPrivate = isPrivate;
     }
 
     public void updatePost(String title, String content) {
