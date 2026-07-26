@@ -14,8 +14,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
-
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/posts")
@@ -34,18 +32,9 @@ public class PostController {
 
     @GetMapping
     public ResponseEntity<ApiResponse<PostListResponse>> getPostList(@AuthMember Long memberId,
-                                                                     @RequestParam(defaultValue = "createdAt", name = "sortBy") String sortBy,
-                                                                     @RequestParam(defaultValue = "Desc",name = "sortDirection") String sortDirection,
-                                                                     @RequestParam(required = false, name = "category") List<String> category,
-                                                                     @RequestParam(required = false, name = "author") Long author,
-                                                                     @RequestParam(defaultValue = "false", name = "followingOnly") boolean followingOnly,
-                                                                     @RequestParam(required = false, name = "keyword") String keyword,
-                                                                     @RequestParam(required = false, name = "nextCursor") String nextCursor,
-                                                                     @RequestParam(defaultValue = "10", name = "limit") int limit
-                                                                     ) {
+                                                                     @Valid @ModelAttribute PostSearchCondition condition) {
 
         log.info ("게시글 목록 조회 요청: memberId: {}", memberId);
-        PostSearchCondition condition = PostSearchCondition.of(sortBy, sortDirection, category, author, followingOnly, keyword, nextCursor, limit);
         PostListResponse response = postService.getPostList(memberId, condition);
 
         return ResponseEntity.ok(ApiResponse.success("게시글 목록 조회 성공", response));
