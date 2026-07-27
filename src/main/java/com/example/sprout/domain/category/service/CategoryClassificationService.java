@@ -7,7 +7,6 @@ import com.example.sprout.global.ai.client.AiChatClient;
 import com.example.sprout.global.ai.dto.AiChatRequest;
 import com.example.sprout.global.ai.dto.AiChatResponse;
 import com.example.sprout.global.ai.dto.AiMessage;
-import com.example.sprout.global.ai.exception.AiCallException;
 import com.example.sprout.global.ai.prompt.PromptTemplateLoader;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

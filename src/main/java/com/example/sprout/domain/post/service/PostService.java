@@ -198,7 +198,7 @@ public class PostService {
     //카테고리 존재 여부 검증 및 카테고리 할당
     private List<Category> resolveCategories (List<String> rawTypes, Post post) {
 
-        if (rawTypes.isEmpty()) {
+        if (rawTypes == null || rawTypes.isEmpty()) {
             log.info("AI 카테고리 할당 요청");
             return categoryClassificationService.classifyCategory(post.getTitle(), post.getContent());
         }
