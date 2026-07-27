@@ -8,6 +8,9 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+
 @Entity
 @Getter
 @Table(name = "members",
@@ -30,9 +33,34 @@ public class Member extends BaseTimeEntity {
     @Column(name = "oauth_id", nullable = false)
     private String oauthId;
 
+    @Column(name = "last_visit_date")
+    private LocalDateTime lastVisitDate;
+
+    @Column(name = "visit_streak")
+    private int visitStreak;
+
     @Builder
     public Member (String oauthId, OauthProvider oauthProvider) {
         this.oauthId = oauthId;
         this.oauthProvider = oauthProvider;
     }
+
+    public void updateVisitStreak() {
+        LocalDateTime now = LocalDateTime.now();
+        LocalDate today = now.toLocalDate();
+
+        if (lastVisitDate == null) {
+            visitStreak = 1;
+        } else {
+            LocalDate lastDate = lastVisitDate.toLocalDate();
+
+            if (lastDate.equals(today)) return;
+
+            if (lastDate.plusDays(1).isEqual(today)) visitStreak++;
+            else visitStreak = 1;
+        }
+
+        lastVisitDate = now;
+    }
+
 }

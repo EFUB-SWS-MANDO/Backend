@@ -12,6 +12,12 @@ import java.util.List;
 
 public interface InterviewSessionRepository extends JpaRepository<InterviewSession, Long> {
 
+    int countAllByMember(Member member);
+
+    List<InterviewSession> findAllByMember(Member member);
+
+    List<InterviewSession> findTop4ByMemberOrderByUpdatedAtDesc(Member member);
+
     @Query("""
         SELECT i 
         FROM InterviewSession i 
