@@ -75,6 +75,9 @@ public class OpenAiChatClient implements AiChatClient {
         if (request.temperature() != null) {
             body.put("temperature", request.temperature());
         }
+        if (request.reasoningEffort() != null) {
+            body.put("reasoning_effort", request.reasoningEffort());
+        }
         body.put("stream", stream);
         return body;
     }

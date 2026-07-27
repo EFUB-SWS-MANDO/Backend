@@ -3,6 +3,7 @@ package com.example.sprout.domain.post.service;
 import com.example.sprout.domain.category.entity.Category;
 import com.example.sprout.domain.category.exception.CategoryErrorCode;
 import com.example.sprout.domain.category.repository.CategoryRepository;
+import com.example.sprout.domain.category.service.CategoryClassificationService;
 import com.example.sprout.domain.comment.repository.CommentRepository;
 import com.example.sprout.domain.comment.service.CommentService;
 import com.example.sprout.domain.file.dto.response.MovedFileInfo;
@@ -68,6 +69,7 @@ public class PostService {
     private final S3FileService s3FileService;
     private final PostFileService postFileService;
     private final S3PresignedUrlService s3PresignedUrlService;
+    private final CategoryClassificationService categoryClassificationService;
 
     private record SummaryLookup(
             Map<Long, Profile> profileMap,
@@ -81,12 +83,12 @@ public class PostService {
     @Transactional
     public PostDetailResponse createPost(Long authorId, CreatePostRequest request) {
         Member author = getMemberById(authorId);
-
-        //카테고리 검증
-        List<Category> categories = resolveCategories(request.categories());
-
         //게시글 생성 및 저장
         Post newPost = request.toEntity(author);
+
+        //카테고리 검증
+        List<Category> categories = resolveCategories(request.categories(), newPost);
+
         postRepository.save(newPost);
         postCategoryService.assignPostCategories(newPost, categories);
 
@@ -149,7 +151,7 @@ public class PostService {
             throw new BusinessException(PostErrorCode.POST_ACCESS_DENIED);
         }
 
-        List<Category> newCategories = resolveCategories(request.categories());
+        List<Category> newCategories = resolveCategories(request.categories(), post);
 
         //게시글 수정 - 카테고리 수정 - 이미지 저장 수정
         post.updatePost(request.title(), request.content(), request.isPrivate());
@@ -194,11 +196,11 @@ public class PostService {
     }
 
     //카테고리 존재 여부 검증 및 카테고리 할당
-    private List<Category> resolveCategories (List<String> rawTypes) {
+    private List<Category> resolveCategories (List<String> rawTypes, Post post) {
 
-        //TODO: 카테고리 미설정 시, AI API 사용해서 카테고리 분류하도록 메소드 호출 (분기 처리 필요)
-        if (rawTypes.isEmpty()) {
-
+        if (rawTypes == null || rawTypes.isEmpty()) {
+            log.info("AI 카테고리 할당 요청");
+            return categoryClassificationService.classifyCategory(post.getTitle(), post.getContent());
         }
 
         List<String> types = rawTypes.stream().distinct().toList();

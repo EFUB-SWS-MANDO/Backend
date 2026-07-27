@@ -8,6 +8,7 @@ import java.util.List;
 public record AiChatRequest(
         List<AiMessage> messages,
         Double temperature,
-        Integer maxTokens
+        Integer maxTokens,
+        String reasoningEffort
 ) {
 }
