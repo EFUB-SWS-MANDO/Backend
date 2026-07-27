@@ -46,10 +46,12 @@ public class ProfileService {
 
         Profile newProfile = request.toEntity(member);
         profileRepository.save(newProfile);
+        String profileImageUrl = s3PresignedUrlService.createDownloadUrlOrNull(newProfile.getProfileImage());
 
         log.info("프로필 생성 성공 - memberId: {}, profileId: {}, nickname: {}, profileImage: {}, bio: {}",
                 memberId, newProfile.getId(), newProfile.getNickname(), newProfile.getProfileImage(), newProfile.getBio());
-        return toProfileResponse(memberId, member, newProfile);
+        //신규 프로필: 팔로우/팔로워 0, isMine = true, isFollowing = false
+        return ProfileResponse.of(newProfile, profileImageUrl, 0, 0, true, false);
     }
 
     @Transactional(readOnly = true)
