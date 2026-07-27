@@ -43,15 +43,19 @@ public class Comment extends BaseTimeEntity {
     @Column(name = "thread_root_id")
     private Long threadRootId;
 
+    @Column(name = "is_private", nullable = false)
+    private boolean isPrivate;
+
     @Column(nullable = false)
     private boolean deleted = false;
 
     @Builder
-    public Comment(String content, Member author, Post post, Comment parent) {
+    public Comment(String content, Member author, Post post, Comment parent, boolean isPrivate) {
         this.content = content;
         this.author = author;
         this.post = post;
         this.parent = parent;
+        this.isPrivate = isPrivate;
         this.threadRootId = resolveThreadRootId(parent);
     }
 
@@ -68,9 +72,38 @@ public class Comment extends BaseTimeEntity {
         return this.author.getId().equals(member.getId());
     }
 
+    // 댓글 가시성 판단
+    public boolean isVisible(Long viewerId, Long postAuthorId) {
+        // 부모의 공개 여부에 따라 자식 댓글의 가시성 판단
+        boolean effectivePrivate = this.isPrivate
+                || (this.parent != null && this.parent.isPrivate());
+        // 공개 댓글
+        if (!effectivePrivate) {
+            return true;
+        }
+        if (viewerId == null) {
+            return false;
+        }
+        // 게시글 작성자
+        if (viewerId.equals(postAuthorId)) {
+            return true;
+        }
+        // 댓글 작성자 본인
+        if (this.author != null && viewerId.equals(this.author.getId())) {
+            return true;
+        }
+        // 부모 댓글 작성자
+        if (this.parent != null && this.parent.getAuthor() != null
+            && viewerId.equals(this.parent.getAuthor().getId())) {
+            return true;
+        }
+        return false;
+    }
+
     // 댓글 수정
-    public void updateComment(String content) {
+    public void updateComment(String content, boolean isPrivate) {
         this.content = content;
+        this.isPrivate = isPrivate;
     }
 
     // 댓글 삭제
