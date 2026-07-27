@@ -13,6 +13,7 @@ import java.util.List;
 public interface PostRepository extends JpaRepository<Post, Long>, PostRepositoryCustom {
 
     List<Post> findAllByAuthor (Member author);
+
     @Modifying(clearAutomatically = true)
     @Query("""
             UPDATE Post p 
@@ -33,4 +34,11 @@ public interface PostRepository extends JpaRepository<Post, Long>, PostRepositor
 
     @Query("SELECT p.likeCount FROM Post p WHERE p.id = :postId")
     int findLikeCountById(@Param("postId") Long postId);
+
+    int countAllByAuthor(Member member);
+
+    List<Post> findTop4ByAuthorOrderByUpdatedAtDesc(Member member);
+
+    @Query("SELECT COALESCE(SUM(p.likeCount), 0) FROM Post p WHERE p.author = :author")
+    long sumLikeCountByAuthor(@Param("author") Member member);
 }
