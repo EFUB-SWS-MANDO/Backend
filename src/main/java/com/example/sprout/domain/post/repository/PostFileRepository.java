@@ -9,7 +9,7 @@ import java.util.List;
 public interface PostFileRepository extends JpaRepository<PostFile, Long> {
     List<PostFile> findAllByPost(Post post);
 
-    long deleteAllByS3KeyIn(List<String> toRemove);
+    long deleteAllByPostAndS3KeyIn(Post post, List<String> toRemove);
 
     void deleteAllByPost(Post post);
 }

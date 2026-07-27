@@ -52,7 +52,7 @@ public class PostFileService {
         createPostFile(post, newFileInfos);
 
         //삭제된 파일 삭제
-        long deleted = postFileRepository.deleteAllByS3KeyIn(toRemove);
+        long deleted = postFileRepository.deleteAllByPostAndS3KeyIn(post, toRemove);
         if (deleted != toRemove.size()) {
             log.warn("파일 삭제 개수 불일치 - 예상: {}, 실제: {}, postId: {}", toRemove.size(), deleted, post.getId());
         }
