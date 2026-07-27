@@ -21,7 +21,7 @@ public class CategoryDataInitializer implements CommandLineRunner {
             "COLLABORATION", "PROBLEM_SOLVING", "COMMUNICATION",
             "LEADERSHIP", "CHALLENGE", "ACHIEVEMENT", "GROWTH",
             "PROFESSIONAL_SKILLS", "CREATIVITY", "CONFLICT_MANAGEMENT",
-            "PLANNING"
+            "PLANNING", "EXTERNAL_ACTIVITY", "CONTEST", "ETC"
     );
 
    @Override

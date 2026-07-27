@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.util.List;
 import java.util.Optional;
 
 public interface FollowRepository extends JpaRepository<Follow, Long> {
@@ -16,7 +17,7 @@ public interface FollowRepository extends JpaRepository<Follow, Long> {
 
     // 영향을 받은 행(Row) 개수를 정수로 반환
     @Modifying
-    @Query("DELETE FROM Follow f WHERE f.follower = :followerId AND f.followee = :followeeId")
+    @Query("DELETE FROM Follow f WHERE f.follower.id = :followerId AND f.followee.id = :followeeId")
     int deleteByFollowerIdAndFolloweeId(
             @Param("followerId") Long followerId,
             @Param("followeeId") Long followeeId
@@ -28,4 +29,8 @@ public interface FollowRepository extends JpaRepository<Follow, Long> {
     @Modifying
     @Query("DELETE FROM Follow f WHERE f.follower = :member OR f.followee = :member")
     void deleteByFollowerOrFollowee(@Param("member") Member member);
+
+    @Query("SELECT f.followee.id FROM Follow f " +
+            "WHERE f.follower.id = :followerId AND f.followee.id IN :followeeIds")
+    List<Long> findFolloweeIdsByFollowerIdAndFolloweeIdIn(@Param("followerId")Long followerId, @Param("followeeIds") List<Long> followeeIds);
 }

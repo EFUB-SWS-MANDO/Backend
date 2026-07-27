@@ -2,7 +2,7 @@ package com.example.sprout.domain.profile.controller;
 
 import com.example.sprout.domain.auth.security.AuthMember;
 import com.example.sprout.domain.profile.dto.request.CreateProfileRequest;
-import com.example.sprout.domain.profile.dto.response.CreateProfileResponse;
+import com.example.sprout.domain.profile.dto.request.UpdateProfileRequest;
 import com.example.sprout.domain.profile.dto.response.ProfileResponse;
 import com.example.sprout.domain.profile.service.ProfileService;
 import com.example.sprout.global.common.response.ApiResponse;
@@ -21,10 +21,10 @@ public class ProfileController {
     private final ProfileService profileService;
 
     @PostMapping("/me/profiles")
-    public ResponseEntity<ApiResponse<CreateProfileResponse>> createProfile(@AuthMember Long memberId,
+    public ResponseEntity<ApiResponse<ProfileResponse>> createProfile(@AuthMember Long memberId,
                                                                             @Valid @RequestBody CreateProfileRequest request) {
 
-        CreateProfileResponse response = profileService.createProfile(memberId, request);
+        ProfileResponse response = profileService.createProfile(memberId, request);
         return ResponseEntity.ok(ApiResponse.success("프로필 생성 성공", response));
     }
 
@@ -36,4 +36,12 @@ public class ProfileController {
         return ResponseEntity.ok(ApiResponse.success("프로필 조회 성공", response));
     }
 
+    @PatchMapping("/me/profiles")
+    public ResponseEntity<ApiResponse<ProfileResponse>> updateProfile(@AuthMember Long requesterId,
+                                                                      @Valid @RequestBody UpdateProfileRequest request) {
+
+        log.info("프로필 수정 요청 - requesterId: {}", requesterId);
+        ProfileResponse response = profileService.updateProfile(requesterId, request);
+        return ResponseEntity.ok(ApiResponse.success("프로필 수정 성공", response));
+    }
 }
