@@ -74,7 +74,7 @@ public class CategoryClassificationService {
                 new AiMessage("system", systemPrompt),
                 new AiMessage("user", userPrompt)
         );
-        AiChatRequest request = new AiChatRequest(aiMessageList, 0.0, 100);
+        AiChatRequest request = new AiChatRequest(aiMessageList, 1.0, 300, "minimal");
 
         try{
             AiChatResponse rawResponse  = aiChatClient.chat(request);
