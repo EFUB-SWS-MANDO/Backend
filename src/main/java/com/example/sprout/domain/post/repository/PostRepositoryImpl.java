@@ -31,6 +31,7 @@ public class PostRepositoryImpl implements PostRepositoryCustom {
                         categoryIn(condition.category()),
                         followingFilter(condition.followingOnly(), requesterId),
                         keywordContains(condition.keyword()),
+                        visibilityFilter(requesterId),
                         cursorPredicate(condition.sortBy(), condition.sortDirection(), cursor)
                 )
                 .orderBy(getOrder(condition.sortBy(), condition.sortDirection()))
@@ -47,7 +48,8 @@ public class PostRepositoryImpl implements PostRepositoryCustom {
                         authorEq(condition.author()),
                         categoryIn(condition.category()),
                         followingFilter(condition.followingOnly(), requesterId),
-                        keywordContains(condition.keyword())
+                        keywordContains(condition.keyword()),
+                        visibilityFilter(requesterId)
                 )
                 .fetchOne();
 
@@ -94,7 +96,7 @@ public class PostRepositoryImpl implements PostRepositoryCustom {
     }
 
 
-    private BooleanExpression categoryIn (List<String> categories) {
+    private BooleanExpression categoryIn(List<String> categories) {
         if (categories == null || categories.isEmpty()) return null;
         QPostCategory postCategory = QPostCategory.postCategory;
 
@@ -106,7 +108,7 @@ public class PostRepositoryImpl implements PostRepositoryCustom {
         );
     }
 
-    private BooleanExpression authorEq (Long authorId) {
+    private BooleanExpression authorEq(Long authorId) {
         return (authorId == null) ? null : post.author.id.eq(authorId);
     }
 
@@ -116,7 +118,7 @@ public class PostRepositoryImpl implements PostRepositoryCustom {
     }
 
     //팔로우 중인 작성자들의 게시글만 조회
-    private BooleanExpression followingFilter (boolean followingOnly, Long requesterId) {
+    private BooleanExpression followingFilter(boolean followingOnly, Long requesterId) {
         if (!followingOnly) return null;
         QFollow follow = QFollow.follow;
 
@@ -126,5 +128,11 @@ public class PostRepositoryImpl implements PostRepositoryCustom {
                         .from(follow)
                         .where(follow.follower.id.eq(requesterId))
         );
+    }
+
+    //공개글/비공개글 처리
+    private BooleanExpression visibilityFilter(Long requesterId) {
+        return post.isPrivate.eq(false)
+                .or(post.isPrivate.eq(true).and(post.author.id.eq(requesterId)));
     }
 }

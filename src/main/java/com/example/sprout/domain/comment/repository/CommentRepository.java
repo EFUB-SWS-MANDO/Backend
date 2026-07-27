@@ -1,7 +1,7 @@
 package com.example.sprout.domain.comment.repository;
 
 import com.example.sprout.domain.comment.entity.Comment;
-import com.example.sprout.domain.post.summary.PostCommentCount;
+import com.example.sprout.domain.post.repository.projection.PostCommentCount;
 import org.springframework.data.domain.Pageable;
 import com.example.sprout.domain.member.entity.Member;
 import com.example.sprout.domain.post.entity.Post;

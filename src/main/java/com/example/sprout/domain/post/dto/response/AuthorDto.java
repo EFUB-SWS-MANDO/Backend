@@ -11,11 +11,11 @@ public record AuthorDto(
         String profileImage,
         boolean isFollowing
 ) {
-    public static AuthorDto of (Profile authorProfile, boolean isFollowing) {
+    public static AuthorDto of (Profile authorProfile, String profileImage, boolean isFollowing) {
         return AuthorDto.builder()
                 .memberId(authorProfile.getMember().getId())
                 .nickname(authorProfile.getNickname())
-                .profileImage(authorProfile.getProfileImage())
+                .profileImage(profileImage)
                 .isFollowing(isFollowing)
                 .build();
     }

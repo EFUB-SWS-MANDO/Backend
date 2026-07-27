@@ -35,7 +35,7 @@ public class Post extends BaseTimeEntity {
     @Column(name = "like_count")
     private int likeCount;
 
-    @Column(name = "isPrivate")
+    @Column(name = "is_private", nullable = false)
     private boolean isPrivate;
 
     @Builder
@@ -43,12 +43,17 @@ public class Post extends BaseTimeEntity {
         this.author = author;
         this.title = title;
         this.content = content;
-        this.likeCount = 0;
         this.isPrivate = isPrivate;
+        this.likeCount = 0;
     }
 
-    public void updatePost(String title, String content) {
+    public void updatePost(String title, String content, Boolean isPrivate) {
         if(title != null) this.title = title;
         if(content != null) this.content = content;
+        if(isPrivate != null) this.isPrivate = isPrivate;
+    }
+
+    public boolean isUpdated() {
+        return this.getCreatedAt().isBefore(this.getUpdatedAt());
     }
 }
