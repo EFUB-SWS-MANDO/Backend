@@ -328,19 +328,13 @@ public class PostService {
     }
 
     private List<String> getPostCategories(Post post) {
-        List<Category> categories = postCategoryRepository.findAllByPost(post).stream()
-                .map(PostCategory::getCategory)
-                .toList();
-
-        return categories.stream()
-                .map(Category::getType)
+        return postCategoryRepository.findAllByPost(post).stream()
+                .map(postCategory -> postCategory.getCategory().getType())
                 .toList();
     }
 
     private List<String> getPostFileKeys(Post post) {
-        List<PostFile> postFiles = postFileService.getPostFiles(post);
-
-        return postFiles.stream()
+        return postFileService.getPostFiles(post).stream()
                 .map(PostFile::getS3Key)
                 .toList();
     }
