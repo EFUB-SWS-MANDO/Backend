@@ -2,7 +2,7 @@ package com.example.sprout.domain.post.repository;
 
 import com.example.sprout.domain.post.entity.Post;
 import com.example.sprout.domain.post.entity.PostCategory;
-import com.example.sprout.domain.post.summary.PostCategoryView;
+import com.example.sprout.domain.post.repository.projection.PostCategoryView;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;

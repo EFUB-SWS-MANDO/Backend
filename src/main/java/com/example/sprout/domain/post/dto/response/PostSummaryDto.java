@@ -20,7 +20,8 @@ public record PostSummaryDto(
         Long commentCount,
         LocalDateTime createdAt,
         LocalDateTime updatedAt,
-        boolean isUpdated
+        boolean isUpdated,
+        boolean isPrivate
 
 ) {
     private static final int SUMMARY_LENGTH = 100;
@@ -38,7 +39,8 @@ public record PostSummaryDto(
                 .commentCount(commentCount)
                 .createdAt(post.getCreatedAt())
                 .updatedAt(post.getUpdatedAt())
-                .isUpdated(!post.getCreatedAt().equals(post.getUpdatedAt()))
+                .isUpdated(post.isUpdated())
+                .isPrivate(post.isPrivate())
                 .build();
     }
 

@@ -10,5 +10,7 @@ public record UpdatePostRequest(
         String title,
         String content,
         @NotNull
-        List<String> categories
+        List<String> categories,
+        List<String> fileKeys,
+        Boolean isPrivate
 ) {}
