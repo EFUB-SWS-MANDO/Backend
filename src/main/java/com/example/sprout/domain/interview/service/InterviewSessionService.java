@@ -1,9 +1,12 @@
 package com.example.sprout.domain.interview.service;
 
+import com.example.sprout.domain.interview.dto.request.CreateInterviewQuestionRequest;
 import com.example.sprout.domain.interview.dto.request.CreateInterviewSessionRequest;
 import com.example.sprout.domain.interview.dto.response.InterviewFeedbackResponse;
 import com.example.sprout.domain.interview.dto.response.InterviewSessionCursorResponse;
 import com.example.sprout.domain.interview.dto.response.InterviewSessionResponse;
+import com.example.sprout.domain.interview.dto.response.SubmitInterviewAnswerResponse;
+import com.example.sprout.domain.interview.entity.InterviewAnswer;
 import com.example.sprout.domain.interview.entity.InterviewQuestion;
 import com.example.sprout.domain.interview.entity.InterviewSession;
 import com.example.sprout.domain.interview.enums.InterviewQuestionType;
@@ -11,6 +14,7 @@ import com.example.sprout.domain.interview.exception.InterviewErrorCode;
 import com.example.sprout.domain.interview.repository.InterviewAnswerRepository;
 import com.example.sprout.domain.interview.repository.InterviewQuestionRepository;
 import com.example.sprout.domain.interview.repository.InterviewSessionRepository;
+import com.example.sprout.domain.interview.sse.event.NextQuestionGenerationRequestedEvent;
 import com.example.sprout.domain.interview.sse.event.QuestionGenerationRequestedEvent;
 import com.example.sprout.domain.interview.sse.ticket.SseTicketService;
 import com.example.sprout.domain.member.entity.Member;
@@ -71,6 +75,42 @@ public class InterviewSessionService {
         log.info("모의면접 생성 완료 - sessionId={}, questionId={}", interviewSession.getId(), interviewQuestion.getId());
 
         return InterviewSessionResponse.from(interviewSession, interviewQuestion, sseTicket);
+    }
+
+    // 모의면접 답변 제출 및 다음 질문 생성
+    @Transactional
+    public SubmitInterviewAnswerResponse createQuestion(
+            Long requesterId, Long interviewSessionId, CreateInterviewQuestionRequest request
+    ) {
+
+        InterviewSession interviewSession = getInterviewSession(interviewSessionId);
+        validateOwnership(requesterId, interviewSession);
+
+        InterviewQuestion currentQuestion = getInterviewQuestion(request.questionId());
+        validateQuestionBelongsToSession(currentQuestion, interviewSession);
+        validateAnswerNotSubmitted(currentQuestion);
+
+        InterviewAnswer answer = InterviewAnswer.builder()
+                .session(interviewSession)
+                .question(currentQuestion)
+                .content(request.answer())
+                .build();
+        interviewAnswerRepository.save(answer);
+
+        InterviewQuestion nextQuestion = InterviewQuestion.builder()
+                .type(request.type())
+                .session(interviewSession)
+                .build();
+        interviewQuestionRepository.save(nextQuestion);
+
+        // 트랜잭션 커밋 이후 다음 질문 생성
+        eventPublisher.publishEvent(new NextQuestionGenerationRequestedEvent(
+                interviewSessionId, nextQuestion.getId(), request.type(), request.answer()
+        ));
+
+        log.info("모의면접 답변 제출 및 다음 질문 생성 요청 완료 - sessionId={}, questionId={}, nextQuestionId={}",
+                interviewSessionId, currentQuestion.getId(), nextQuestion.getId());
+        return SubmitInterviewAnswerResponse.of(nextQuestion);
     }
 
     // 모의면접 목록 조회
@@ -149,6 +189,11 @@ public class InterviewSessionService {
                 .orElseThrow(() -> new BusinessException(InterviewErrorCode.INTERVIEW_NOT_FOUND));
     }
 
+    private InterviewQuestion getInterviewQuestion(Long interviewQuestionId) {
+        return interviewQuestionRepository.findById(interviewQuestionId)
+                .orElseThrow(() -> new BusinessException(InterviewErrorCode.INTERVIEW_QUESTION_NOT_FOUND));
+    }
+
     // 요청자 == 모의면접 세션 주인 검증
     private void validateOwnership(Long requesterId, InterviewSession interviewSession) {
         if(!requesterId.equals(interviewSession.getMember().getId())) {
@@ -167,6 +212,22 @@ public class InterviewSessionService {
                 "면접 세션({}) 데이터 삭제 완료 - interviewQuestions={}, interviewAnswers={}",
                 interviewSession.getId(), deletedQuestions, deletedAnswers
         );
+    }
+
+    // 질문이 해당 세션 소속인지 검증
+    private void validateQuestionBelongsToSession(
+            InterviewQuestion interviewQuestion, InterviewSession interviewSession
+    ) {
+        if (!interviewQuestion.getSession().getId().equals(interviewSession.getId())) {
+            throw new BusinessException(InterviewErrorCode.INTERVIEW_QUESTION_NOT_FOUND);
+        }
+    }
+
+    // 이미 답변이 제출된 질문인지 검증
+    private void validateAnswerNotSubmitted(InterviewQuestion interviewQuestion) {
+        if (interviewAnswerRepository.existsByQuestion(interviewQuestion)) {
+            throw new BusinessException(InterviewErrorCode.INTERVIEW_ANSWER_ALREADY_EXISTS);
+        }
     }
 
 }
