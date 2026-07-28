@@ -41,4 +41,9 @@ public class ResumeDraft extends BaseTimeEntity {
         this.answer = answer;
         this.description = description;
     }
+
+    public void updateAnswer (String answer, String description) {
+        this.answer = answer;
+        this.description = description;
+    }
 }
