@@ -9,6 +9,7 @@ import lombok.NoArgsConstructor;
 
 @Entity
 @Getter
+@Table(name = "resume_drafts")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class ResumeDraft extends BaseTimeEntity {
 

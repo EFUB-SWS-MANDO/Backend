@@ -9,7 +9,7 @@ import lombok.NoArgsConstructor;
 
 @Entity
 @Getter
-@Table(name = "resume_source_post")
+@Table(name = "resume_source_posts")
 @IdClass(ResumeSourcePostId.class)
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class ResumeSourcePost {
