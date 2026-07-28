@@ -1,19 +1,27 @@
 package com.example.sprout.domain.interview.service;
 
+import com.example.sprout.domain.interview.dto.request.CreateInterviewSessionRequest;
 import com.example.sprout.domain.interview.dto.response.InterviewFeedbackResponse;
 import com.example.sprout.domain.interview.dto.response.InterviewSessionCursorResponse;
+import com.example.sprout.domain.interview.dto.response.InterviewSessionResponse;
+import com.example.sprout.domain.interview.entity.InterviewQuestion;
 import com.example.sprout.domain.interview.entity.InterviewSession;
+import com.example.sprout.domain.interview.enums.InterviewQuestionType;
 import com.example.sprout.domain.interview.exception.InterviewErrorCode;
 import com.example.sprout.domain.interview.repository.InterviewAnswerRepository;
 import com.example.sprout.domain.interview.repository.InterviewQuestionRepository;
 import com.example.sprout.domain.interview.repository.InterviewSessionRepository;
+import com.example.sprout.domain.interview.sse.event.QuestionGenerationRequestedEvent;
+import com.example.sprout.domain.interview.sse.ticket.SseTicketService;
 import com.example.sprout.domain.member.entity.Member;
+import com.example.sprout.domain.member.repository.MemberRepository;
 import com.example.sprout.global.common.util.CursorPageUtils;
 import com.example.sprout.global.error.BusinessException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -26,10 +34,43 @@ import java.util.List;
 @Transactional(readOnly = true)
 public class InterviewSessionService {
 
+    private final SseTicketService sseTicketService;
+    private final InterviewSessionQuestionGenerationService questionGenerationService;
+
+    private final ApplicationEventPublisher eventPublisher;
+
+    private final MemberRepository memberRepository;
     private final InterviewSessionRepository interviewSessionRepository;
     private final InterviewAnswerRepository interviewAnswerRepository;
     private final InterviewQuestionRepository interviewQuestionRepository;
 
+
+    // 모의면접 생성
+    public InterviewSessionResponse createInterview(Long requesterId, CreateInterviewSessionRequest request) {
+
+        Member requester = memberRepository.getReferenceById(requesterId);
+
+        InterviewSession interviewSession = InterviewSession.builder()
+                .type(request.type()).member(requester).title(request.title()).build();
+        InterviewQuestion interviewQuestion = InterviewQuestion.builder()
+                .type(InterviewQuestionType.INITIAL).session(interviewSession).build();
+
+        interviewSessionRepository.save(interviewSession);
+        interviewQuestionRepository.save(interviewQuestion);
+
+        // SSE 단발성 인증 티켓 발급
+        String sseTicket = sseTicketService.issueTicket(interviewSession.getId());
+
+        // 백그라운드 AI 첫 질문 생성 (생성 트랜잭션 완료 이후 실행)
+        eventPublisher.publishEvent(new QuestionGenerationRequestedEvent(
+                interviewSession.getId(), interviewQuestion.getId(),
+                request.type(), request.targetIds()
+        ));
+
+        log.info("모의면접 생성 완료 - sessionId={}, questionId={}", interviewSession.getId(), interviewQuestion.getId());
+
+        return InterviewSessionResponse.from(interviewSession, interviewQuestion, sseTicket);
+    }
 
     // 모의면접 목록 조회
     // 목록 진입 시 가장 빈번히 조회되는 첫 페이지만 캐싱,
