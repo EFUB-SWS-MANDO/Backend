@@ -66,7 +66,6 @@ public class InterviewSession extends BaseTimeEntity {
     }
 
     public void recordSummary(String summary){
-        validateCompleted();
         this.summary = summary;
     }
 
