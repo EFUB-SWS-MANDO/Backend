@@ -1,12 +1,11 @@
 package com.example.sprout.domain.interview.service;
 
-import com.example.sprout.domain.interview.entity.InterviewAnswer;
+import com.example.sprout.domain.interview.dto.response.InterviewFeedbackResult;
 import com.example.sprout.domain.interview.entity.InterviewQuestion;
 import com.example.sprout.domain.interview.entity.InterviewSession;
 import com.example.sprout.domain.interview.enums.InterviewQuestionType;
 import com.example.sprout.domain.interview.enums.InterviewSessionType;
 import com.example.sprout.domain.interview.exception.InterviewErrorCode;
-import com.example.sprout.domain.interview.repository.InterviewAnswerRepository;
 import com.example.sprout.domain.interview.repository.InterviewQuestionRepository;
 import com.example.sprout.domain.interview.repository.InterviewSessionRepository;
 import com.example.sprout.domain.interview.sse.connection.SseSubscriptionRegistry;
@@ -20,6 +19,7 @@ import com.example.sprout.domain.resume.repository.ResumeRepository;
 import com.example.sprout.global.ai.client.AiChatClient;
 import com.example.sprout.global.ai.dto.AiChatRequest;
 import com.example.sprout.global.ai.dto.AiMessage;
+import com.example.sprout.global.ai.exception.AiCallException;
 import com.example.sprout.global.ai.prompt.PromptTemplateLoader;
 import com.example.sprout.global.error.BusinessException;
 import com.example.sprout.global.error.GlobalErrorCode;
@@ -29,6 +29,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import reactor.core.Disposable;
 import reactor.core.scheduler.Schedulers;
+import software.amazon.awssdk.thirdparty.jackson.core.JsonProcessingException;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
 
 import java.util.List;
 import java.util.Map;
@@ -38,6 +41,8 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 public class InterviewSessionQuestionGenerationService {
+
+    private final ObjectMapper objectMapper;
 
     private final AiChatClient aiChatClient;
     private final PromptTemplateLoader promptTemplateLoader;
@@ -88,6 +93,23 @@ public class InterviewSessionQuestionGenerationService {
 
         streamQuestion(sessionId, questionId, request);
     }
+
+    @Transactional
+    public InterviewFeedbackResult generateFeedback(InterviewSession session) {
+        String qnaHistory = formatQnaHistory(session.getId());
+
+        AiChatRequest request = buildFeedbackRequest(session.getSummary(), qnaHistory);
+
+        try {
+            String rawJson = aiChatClient.chat(request).content();
+            return parseFeedback(rawJson);
+        } catch (AiCallException e) {
+            log.error("총평 생성 실패 - sessionId={}", session.getId());
+            throw new BusinessException(InterviewErrorCode.INTERVIEW_FEEDBACK_GENERATED_FAILED);
+        }
+
+    }
+
 
     private String collectReferenceContent(InterviewSessionType type, List<Long> targetIds) {
         return switch (type) {
@@ -155,6 +177,7 @@ public class InterviewSessionQuestionGenerationService {
 
         return AiChatRequest.builder()
                 .messages(List.of(new AiMessage("system", systemPrompt)))
+                .maxTokens(3000)
                 .build();
     }
 
@@ -168,7 +191,31 @@ public class InterviewSessionQuestionGenerationService {
 
         return AiChatRequest.builder()
                 .messages(List.of(new AiMessage("system", systemPrompt)))
+                .maxTokens(3000)
                 .build();
+    }
+
+    // 총평 생성 요청 프롬프트 생성
+    private AiChatRequest buildFeedbackRequest(String summary, String qnaHistory) {
+        PromptTemplateLoader.PromptTemplate template = promptTemplateLoader.load("interview-feedback.txt");
+        String systemPrompt = template.render(Map.of(
+                "summary", summary,
+                "qna_history", qnaHistory
+        ));
+
+        return AiChatRequest.builder()
+                .messages(List.of(new AiMessage("system", systemPrompt)))
+                .maxTokens(5000)
+                .build();
+    }
+
+    private InterviewFeedbackResult parseFeedback(String rawJson) {
+        try {
+            String cleaned = rawJson.replaceAll("```json|```", "").trim();
+            return objectMapper.readValue(cleaned, InterviewFeedbackResult.class);
+        } catch (JacksonException e) {
+            throw new BusinessException(InterviewErrorCode.INTERVIEW_FEEDBACK_GENERATED_FAILED);
+        }
     }
 
     private void streamQuestion(Long sessionId, Long questionId, AiChatRequest request) {

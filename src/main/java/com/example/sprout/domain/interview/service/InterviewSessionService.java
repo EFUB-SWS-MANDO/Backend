@@ -1,15 +1,15 @@
 package com.example.sprout.domain.interview.service;
 
+import com.example.sprout.domain.interview.dto.request.CreateInterviewFeedbackRequest;
 import com.example.sprout.domain.interview.dto.request.CreateInterviewQuestionRequest;
 import com.example.sprout.domain.interview.dto.request.CreateInterviewSessionRequest;
-import com.example.sprout.domain.interview.dto.response.InterviewFeedbackResponse;
-import com.example.sprout.domain.interview.dto.response.InterviewSessionCursorResponse;
-import com.example.sprout.domain.interview.dto.response.InterviewSessionResponse;
-import com.example.sprout.domain.interview.dto.response.SubmitInterviewAnswerResponse;
+import com.example.sprout.domain.interview.dto.response.*;
 import com.example.sprout.domain.interview.entity.InterviewAnswer;
 import com.example.sprout.domain.interview.entity.InterviewQuestion;
 import com.example.sprout.domain.interview.entity.InterviewSession;
 import com.example.sprout.domain.interview.enums.InterviewQuestionType;
+import com.example.sprout.domain.interview.enums.InterviewSessionStatus;
+import com.example.sprout.domain.interview.event.InterviewCompletedEvent;
 import com.example.sprout.domain.interview.exception.InterviewErrorCode;
 import com.example.sprout.domain.interview.repository.InterviewAnswerRepository;
 import com.example.sprout.domain.interview.repository.InterviewQuestionRepository;
@@ -140,21 +140,46 @@ public class InterviewSessionService {
         );
     }
 
+    // 모의면접 마지막 답변 제출 및 총평 생성
+    @Transactional
+    public InterviewFeedbackResponse createFeedback(
+            Long requesterId, Long interviewSessionId, CreateInterviewFeedbackRequest request
+    ){
+        InterviewSession interviewSession = getInterviewSession(interviewSessionId);
+        validateOwnership(requesterId, interviewSession);
+        validateInProgress(interviewSession);
+
+        InterviewQuestion interviewQuestion = getInterviewQuestion(request.questionId());
+        validateQuestionBelongsToSession(interviewQuestion, interviewSession);
+        validateAnswerNotSubmitted(interviewQuestion);
+
+        InterviewAnswer interviewAnswer = InterviewAnswer.builder()
+                .session(interviewSession)
+                .question(interviewQuestion)
+                .content(request.answer())
+                .build();
+        interviewAnswerRepository.save(interviewAnswer);
+
+        InterviewFeedbackResult result = questionGenerationService.generateFeedback(interviewSession);
+
+        interviewSession.complete();
+        interviewSession.recordFeedbackResult(result.feedbackSummary(), result.feedback());
+
+        eventPublisher.publishEvent(new InterviewCompletedEvent(interviewSessionId));
+
+        log.info("모의면접 총평 생성 완료 - requesterId={}, interviewSessionId={}", requesterId, interviewSessionId);
+        return InterviewFeedbackResponse.from(interviewSession);
+    }
+
     // 모의면접 총평 조회
     public InterviewFeedbackResponse getFeedback(Long requesterId, Long interviewSessionId) {
         InterviewSession interviewSession = getInterviewSession(interviewSessionId);
         validateOwnership(requesterId, interviewSession);
-        validateFeedbackExists(interviewSession);
+        validateFeedbackNotFound(interviewSession);
 
         log.info("모의면접 총평 조회 완료 - requesterId={}, interviewSessionId={}", requesterId, interviewSessionId);
 
         return InterviewFeedbackResponse.from(interviewSession);
-    }
-
-    private void validateFeedbackExists(InterviewSession interviewSession) {
-        if(!interviewSession.hasFeedback()) {
-            throw new BusinessException(InterviewErrorCode.INTERVIEW_FEEDBACK_NOT_FOUND);
-        }
     }
 
     // 모의면접 단건 삭제
@@ -212,6 +237,20 @@ public class InterviewSessionService {
                 "면접 세션({}) 데이터 삭제 완료 - interviewQuestions={}, interviewAnswers={}",
                 interviewSession.getId(), deletedQuestions, deletedAnswers
         );
+    }
+
+    // 총평이 없으면 404
+    private void validateFeedbackNotFound(InterviewSession interviewSession) {
+        if(!interviewSession.hasFeedback()) {
+            throw new BusinessException(InterviewErrorCode.INTERVIEW_FEEDBACK_NOT_FOUND);
+        }
+    }
+
+    // 세션이 진행 중(IN_PROGRESS)이 아니면 409
+    private void validateInProgress(InterviewSession interviewSession) {
+        if (interviewSession.getStatus() != InterviewSessionStatus.IN_PROGRESS) {
+            throw new BusinessException(InterviewErrorCode.INTERVIEW_ALREADY_COMPLETED);
+        }
     }
 
     // 질문이 해당 세션 소속인지 검증
