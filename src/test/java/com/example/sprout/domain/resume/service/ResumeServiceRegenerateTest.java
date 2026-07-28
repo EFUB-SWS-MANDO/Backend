@@ -45,12 +45,6 @@ import static org.mockito.Mockito.*;
 public class ResumeServiceRegenerateTest {
 
     @Mock
-    private MemberRepository memberRepository;
-
-    @Mock
-    private PostRepository postRepository;
-
-    @Mock
     private PostCategoryRepository postCategoryRepository;
 
     @Mock
