@@ -46,6 +46,7 @@ public class InterviewSessionService {
 
 
     // 모의면접 생성
+    @Transactional
     public InterviewSessionResponse createInterview(Long requesterId, CreateInterviewSessionRequest request) {
 
         Member requester = memberRepository.getReferenceById(requesterId);

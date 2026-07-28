@@ -95,7 +95,6 @@ public class InterviewSessionQuestionGenerationService {
 
         AiChatRequest request = AiChatRequest.builder()
                 .messages(List.of(new AiMessage("system", systemPrompt)))
-                .temperature(0.3)
                 .build();
 
         return aiChatClient.chat(request).content();
@@ -107,7 +106,6 @@ public class InterviewSessionQuestionGenerationService {
 
         return AiChatRequest.builder()
                 .messages(List.of(new AiMessage("system", systemPrompt)))
-                .temperature(0.7)
                 .build();
     }
 
