@@ -22,14 +22,12 @@ import com.example.sprout.global.ai.dto.AiMessage;
 import com.example.sprout.global.ai.exception.AiCallException;
 import com.example.sprout.global.ai.prompt.PromptTemplateLoader;
 import com.example.sprout.global.error.BusinessException;
-import com.example.sprout.global.error.GlobalErrorCode;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import reactor.core.Disposable;
 import reactor.core.scheduler.Schedulers;
-import software.amazon.awssdk.thirdparty.jackson.core.JsonProcessingException;
 import tools.jackson.core.JacksonException;
 import tools.jackson.databind.ObjectMapper;
 
