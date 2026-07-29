@@ -313,7 +313,7 @@ public class InterviewSessionService {
         List<InterviewQuestionDetailResponse> questionDetailResponses
                 = questions.stream()
                 .map(q -> InterviewQuestionDetailResponse.of(
-                        q, answerMap.getOrDefault(q.getId(), null)
+                        q, answerMap.get(q.getId())
                 ))
                 .toList();
 
