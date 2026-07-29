@@ -1,6 +1,7 @@
 package com.example.sprout.domain.interview.controller;
 
 import com.example.sprout.domain.auth.security.AuthMember;
+import com.example.sprout.domain.interview.dto.request.CreateInterviewFeedbackRequest;
 import com.example.sprout.domain.interview.dto.request.CreateInterviewQuestionRequest;
 import com.example.sprout.domain.interview.dto.request.CreateInterviewSessionRequest;
 import com.example.sprout.domain.interview.dto.response.InterviewFeedbackResponse;
@@ -75,6 +76,20 @@ public class InterviewSessionController {
                         response
                 )
         );
+    }
+
+    @PostMapping("/{interviewSessionId}/feedback")
+    public ResponseEntity<ApiResponse<InterviewFeedbackResponse>> createInterviewFeedback(
+            @AuthMember Long requesterId,
+            @PathVariable(name = "interviewSessionId") Long interviewSessionId,
+            @Valid @RequestBody CreateInterviewFeedbackRequest request
+    ) {
+        log.info("모의면접 총평 생성 요청, requesterId={}, interviewSessionId={}", requesterId, interviewSessionId);
+
+        InterviewFeedbackResponse response = interviewSessionService.createFeedback(requesterId, interviewSessionId, request);
+
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(ApiResponse.success("모의면접 총평 생성 성공", response));
     }
 
     @GetMapping("/{interviewSessionId}/feedback")
