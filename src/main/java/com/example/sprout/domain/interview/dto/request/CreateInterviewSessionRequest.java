@@ -11,7 +11,7 @@ import java.util.List;
 public record CreateInterviewSessionRequest(
         @NotNull
         InterviewSessionType type,
-        @NotBlank @Size(min = 1, max = 20)
+        @NotBlank @Size(max = 50)
         String title,
         @NotEmpty
         List<Long> targetIds
