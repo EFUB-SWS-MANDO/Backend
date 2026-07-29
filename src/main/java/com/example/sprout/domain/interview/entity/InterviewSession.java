@@ -32,7 +32,7 @@ public class InterviewSession extends BaseTimeEntity {
     @JoinColumn(name = "member_id", nullable = false, updatable = false)
     private Member member;
 
-    @Column(name = "title", nullable = false)
+    @Column(name = "title", nullable = false, length = 50)
     private String title;
 
     @Enumerated(EnumType.STRING)
