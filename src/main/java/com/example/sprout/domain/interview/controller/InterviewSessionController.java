@@ -1,15 +1,19 @@
 package com.example.sprout.domain.interview.controller;
 
 import com.example.sprout.domain.auth.security.AuthMember;
+import com.example.sprout.domain.interview.dto.request.CreateInterviewSessionRequest;
 import com.example.sprout.domain.interview.dto.response.InterviewFeedbackResponse;
 import com.example.sprout.domain.interview.dto.response.InterviewSessionCursorResponse;
+import com.example.sprout.domain.interview.dto.response.InterviewSessionResponse;
 import com.example.sprout.domain.interview.service.InterviewSessionService;
 import com.example.sprout.global.common.response.ApiResponse;
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.Positive;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
@@ -23,6 +27,19 @@ public class InterviewSessionController {
 
     private final InterviewSessionService interviewSessionService;
 
+    @PostMapping
+    public ResponseEntity<ApiResponse<InterviewSessionResponse>> createInterview(
+            @AuthMember Long requesterId,
+            @Valid @RequestBody CreateInterviewSessionRequest request
+            ) {
+        log.info("모의면접 생성 요청, requesterId={}", requesterId);
+
+        InterviewSessionResponse response = interviewSessionService.createInterview(requesterId, request);
+
+        return ResponseEntity
+                .status(HttpStatus.CREATED)
+                .body(ApiResponse.success("모의면접 생성 성공", response));
+    }
 
     @GetMapping
     public ResponseEntity<ApiResponse<InterviewSessionCursorResponse>> getInterviews(
