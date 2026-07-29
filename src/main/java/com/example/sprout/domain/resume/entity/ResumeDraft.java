@@ -9,6 +9,7 @@ import lombok.NoArgsConstructor;
 
 @Entity
 @Getter
+@Table(name = "resume_drafts")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class ResumeDraft extends BaseTimeEntity {
 
@@ -38,6 +39,11 @@ public class ResumeDraft extends BaseTimeEntity {
         this.resume = resume;
         this.orderIndex = orderIndex;
         this.question = question;
+        this.answer = answer;
+        this.description = description;
+    }
+
+    public void updateAnswer (String answer, String description) {
         this.answer = answer;
         this.description = description;
     }

@@ -7,26 +7,25 @@ import com.example.sprout.domain.member.repository.MemberRepository;
 import com.example.sprout.domain.resume.entity.Resume;
 import com.example.sprout.domain.resume.exception.ResumeErrorCode;
 import com.example.sprout.domain.resume.repository.ResumeRepository;
+import com.example.sprout.domain.resume.repository.ResumeSourcePostRepository;
 import com.example.sprout.global.error.BusinessException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InOrder;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
-import org.testcontainers.shaded.com.google.common.reflect.Reflection;
 
-import javax.swing.text.html.Option;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 public class ResumeServiceDeleteTest {
@@ -39,6 +38,9 @@ public class ResumeServiceDeleteTest {
 
     @Mock
     ResumeRepository resumeRepository;
+
+    @Mock
+    ResumeSourcePostRepository resumeSourcePostRepository;
 
     @Mock
     ResumeDraftService resumeDraftService;
@@ -134,5 +136,26 @@ public class ResumeServiceDeleteTest {
                 .isEqualTo(ResumeErrorCode.RESUME_ACCESS_DENIED);
 
         verify(resumeRepository, never()).delete(any());
+    }
+
+    @Test
+    @DisplayName("자소서 삭제 시 ResumeSourcePost가 Resume보다 먼저 삭제된다")
+    void deleteResume_order_sourcePostDeletedBeforeResume() {
+        Long requesterId = 1L;
+        Long resumeId = 100L;
+
+        Member author = mock(Member.class);
+        given(author.getId()).willReturn(requesterId);
+        given(memberRepository.findById(requesterId)).willReturn(Optional.of(author)); // 추가
+
+        Resume resume = mock(Resume.class);
+        given(resume.getAuthor()).willReturn(author);
+        given(resumeRepository.findById(resumeId)).willReturn(Optional.of(resume));
+
+        resumeService.deleteResume(requesterId, resumeId);
+
+        InOrder inOrder = inOrder(resumeSourcePostRepository, resumeRepository);
+        inOrder.verify(resumeSourcePostRepository).deleteAllByResumeId(resumeId);
+        inOrder.verify(resumeRepository).delete(resume);
     }
 }
