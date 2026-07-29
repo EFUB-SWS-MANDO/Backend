@@ -37,6 +37,16 @@ public class ResumeController {
         return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success("자소서 생성 성공", response));
     }
 
+    // 자소서 재생성
+    @PostMapping("/{resumeId}/regenerate")
+    public ResponseEntity<ApiResponse<ResumeResponse>> regenerateResume(@AuthMember Long requesterId,
+                                                                        @PathVariable("resumeId") Long resumeId) {
+        log.info("자소서 재생성 API 호출 - resumeId: {}", resumeId);
+
+        ResumeResponse response = resumeService.regenerateResume(requesterId, resumeId);
+        return ResponseEntity.ok().body(ApiResponse.success("자소서 재생성 성공", response));
+    }
+
     // 자소서 목록 조회
     @GetMapping
     public ResponseEntity<ApiResponse<GetResumeListResponse>> getResumeList(@AuthMember Long requesterId,

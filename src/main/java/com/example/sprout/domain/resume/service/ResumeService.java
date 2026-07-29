@@ -17,9 +17,11 @@ import com.example.sprout.domain.resume.dto.response.ResumeListItem;
 import com.example.sprout.domain.resume.dto.response.ResumeResponse;
 import com.example.sprout.domain.resume.entity.Resume;
 import com.example.sprout.domain.resume.entity.ResumeDraft;
+import com.example.sprout.domain.resume.entity.ResumeSourcePost;
 import com.example.sprout.domain.resume.exception.ResumeErrorCode;
 import com.example.sprout.domain.resume.parser.ResumeAiResponseParser;
 import com.example.sprout.domain.resume.repository.ResumeRepository;
+import com.example.sprout.domain.resume.repository.ResumeSourcePostRepository;
 import com.example.sprout.global.ai.client.AiChatClient;
 import com.example.sprout.global.ai.dto.AiChatRequest;
 import com.example.sprout.global.ai.dto.AiChatResponse;
@@ -48,6 +50,7 @@ public class ResumeService {
     private final PostRepository postRepository;
     private final PostCategoryRepository postCategoryRepository;
     private final ResumeRepository resumeRepository;
+    private final ResumeSourcePostRepository resumeSourcePostRepository;
 
     private final ResumeDraftService resumeDraftService;
 
@@ -79,7 +82,44 @@ public class ResumeService {
 
         Resume saved = resumeRepository.save(resume);
 
+        // 참고 게시글 매핑 저장
+        saveToResumeSourcePost(posts, resume);
+
         return toResponse(saved);
+    }
+
+    // 자소서 재생성
+    @Transactional
+    public ResumeResponse regenerateResume(Long requesterId, Long resumeId) {
+        Resume resume = getResume(resumeId);
+
+        // 요청자 == 자소서 작성자 검증
+        validateAuthor(requesterId, resume.getAuthor());
+
+        List<ResumeSourcePost> resumeSourcePostList = getPostsFromResumeSource(resumeId);
+        List<Post> postList = resumeSourcePostList.stream()
+                .map(ResumeSourcePost::getPost)
+                .toList();
+
+        List<Long> postIds = postList.stream().map(Post::getId).toList();
+        List<PostCategory> postCategoryList = getPostCategoryList(postIds);
+        Map<Long, List<PostCategory>> categoriesByPostId = groupCategoriesByPostId(postCategoryList);
+        String postSummary = buildPostSummary(postList, categoriesByPostId);
+
+        // 기존 draft에서 질문 목록 추출
+        List<CreateResumeRequest.QuestionDto> questions = resume.getResumeDraftList().stream()
+                .map(draft -> new CreateResumeRequest.QuestionDto(draft.getOrderIndex(), draft.getQuestion()))
+                .toList();
+
+        Map<Long, GeneratedAnswer> answerMap = generateAllAnswers(postSummary, questions);
+
+        // 기존 draft update
+        resume.getResumeDraftList().forEach(draft -> {
+            GeneratedAnswer generated = getGeneratedAnswer(answerMap, draft.getOrderIndex());
+            draft.updateAnswer(generated.answer(), generated.description());
+        });
+
+        return toResponse(resume);
     }
 
     // 자소서 목록 조회
@@ -127,7 +167,9 @@ public class ResumeService {
 
         validateAuthor(requesterId, resume.getAuthor());
 
+        resumeSourcePostRepository.deleteAllByResumeId(resumeId);
         resumeRepository.delete(resume);
+
         log.info("자소서 삭제 완료 - resumeId: {}, requesterId: {}", resumeId, requesterId);
     }
 
@@ -136,7 +178,10 @@ public class ResumeService {
     public void deleteByMember(Member member) {
         //resumeDraft 삭제
         List<Resume> resumeList = resumeRepository.findAllByAuthor(member);
-        resumeList.forEach(resumeDraftService::deleteAllByResume);
+        resumeList.forEach(resume -> {
+            resumeSourcePostRepository.deleteAllByResumeId(resume.getId());
+            resumeDraftService.deleteAllByResume(resume);
+        });
 
         //resume 삭제
         resumeRepository.deleteAllByAuthor(member);
@@ -180,6 +225,11 @@ public class ResumeService {
         }
 
         return postList;
+    }
+
+    // ResumeSourcePost에서 Post 가져오기
+    private List<ResumeSourcePost> getPostsFromResumeSource(Long resumeId) {
+        return resumeSourcePostRepository.findAllByResumeId(resumeId);
     }
 
     // 게시글 카테고리 조회
@@ -254,7 +304,18 @@ public class ResumeService {
                 .build();
     }
 
-    // 응답 형식 변경
+    // 참고 게시글 ResumeSourcePost에 저장
+    private void saveToResumeSourcePost(List<Post> posts, Resume resume) {
+        List<ResumeSourcePost> sourcePosts = posts.stream()
+                .map(post -> ResumeSourcePost.builder()
+                        .resume(resume)
+                        .post(post)
+                        .build())
+                .toList();
+        resumeSourcePostRepository.saveAll(sourcePosts);
+    }
+
+    // 응답 형식으로 변경
     private ResumeResponse toResponse(Resume resume) {
         List<ResumeDetailItem> items = resume.getResumeDraftList().stream()
                 .map(ResumeDetailItem::from).toList();
