@@ -32,7 +32,7 @@ public class InterviewQuestion extends BaseCreatedEntity {
     @Column(name = "type", nullable = false, updatable = false)
     private InterviewQuestionType type;
 
-    @Column(name = "content")
+    @Column(name = "content", length = 1000)
     private String content;
 
     @Builder
