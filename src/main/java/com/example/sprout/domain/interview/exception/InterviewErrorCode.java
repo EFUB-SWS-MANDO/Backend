@@ -17,7 +17,7 @@ public enum InterviewErrorCode implements ErrorCode {
     INTERVIEW_QUESTION_NOT_FOUND(HttpStatus.NOT_FOUND, "해당 질문이 존재하지 않습니다."),
     INTERVIEW_ANSWER_ALREADY_EXISTS(HttpStatus.CONFLICT, "이미 답변이 존재합니다."),
 
-    INVALID_SSE_TICKET(HttpStatus.BAD_REQUEST, "잘못된 sse 티켓입니다.");
+    INVALID_SSE_TICKET(HttpStatus.UNAUTHORIZED, "잘못된 sse 티켓입니다.");
 
     private final HttpStatus status;
     private final String message;
