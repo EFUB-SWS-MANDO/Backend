@@ -13,6 +13,7 @@ import java.util.List;
 
 @Entity
 @Getter
+@Table(name = "resumes")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class Resume extends BaseTimeEntity {
 

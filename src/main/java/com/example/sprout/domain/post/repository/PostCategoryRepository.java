@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.util.Collection;
 import java.util.List;
 
 public interface PostCategoryRepository extends JpaRepository<PostCategory, Long> {
@@ -23,4 +24,13 @@ public interface PostCategoryRepository extends JpaRepository<PostCategory, Long
             "FROM PostCategory  pc " +
             "WHERE pc.post.id IN :postIds")
     List<PostCategoryView> findCategoryTypesByPostIdIn(@Param("postIds") List<Long> postIds);
+
+
+    @Query("""
+        SELECT pc FROM PostCategory pc
+        JOIN FETCH pc.post p
+        JOIN FETCH pc.category c
+        WHERE pc.category.id IN :categoryIds
+        """)
+    List<PostCategory> findAllWithPostAndCategoryByCategoryIdIn(@Param("categoryIds") List<Long> targetIds);
 }

@@ -8,6 +8,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 
+import java.util.Collection;
 import java.util.List;
 
 public interface ResumeRepository extends JpaRepository<Resume, Long> {
@@ -39,4 +40,13 @@ public interface ResumeRepository extends JpaRepository<Resume, Long> {
            """)
     Long countAllByAuthorAndKeyword(@Param("author") Member author,
                                     @Param("keyword") String keyword);
+
+
+    @Query("""
+        SELECT DISTINCT r FROM Resume r
+        LEFT JOIN FETCH r.resumeDraftList d
+        WHERE r.id IN :resumeIds
+        ORDER BY d.orderIndex ASC
+        """)
+    List<Resume> findAllWithDraftsByIdIn(@Param("resumeIds") List<Long> resumeIds);
 }
