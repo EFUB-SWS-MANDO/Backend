@@ -9,6 +9,8 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.util.List;
+
 public interface InterviewAnswerRepository extends JpaRepository<InterviewAnswer, Long> {
 
     @Modifying(clearAutomatically = true)
@@ -20,4 +22,6 @@ public interface InterviewAnswerRepository extends JpaRepository<InterviewAnswer
     int deleteAllByMember(@Param("member") Member member);
 
     boolean existsByQuestion(InterviewQuestion interviewQuestion);
+
+    List<InterviewAnswer> findAllBySession(InterviewSession interviewSession);
 }

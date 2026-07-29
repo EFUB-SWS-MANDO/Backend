@@ -25,12 +25,15 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.Caching;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -113,6 +116,27 @@ public class InterviewSessionService {
         return SubmitInterviewAnswerResponse.of(nextQuestion);
     }
 
+    // 모의면접 상세 조회
+    @Cacheable(
+            value = "interviewDetail",
+            key = "#interviewSessionId",
+            unless = "#result.status().name() != 'COMPLETED'" // 완료된 면접일 경우에만 캐시
+    )
+    public InterviewSessionDetailResponse getInterview(
+            Long requesterId, Long interviewSessionId
+    ) {
+        InterviewSession interviewSession = getInterviewSession(interviewSessionId);
+        validateOwnership(requesterId, interviewSession);
+
+        String sseTicket = (interviewSession.getStatus() == InterviewSessionStatus.IN_PROGRESS)
+                ? sseTicketService.issueTicket(interviewSession.getId())
+                : null;
+
+        log.info("[Cache Miss] 모의면접 상세 조회 완료 - requesterId={}, sessionId={}", requesterId, interviewSessionId);
+
+        return toInterviewSessionDetailResponse(interviewSession, sseTicket);
+    }
+
     // 모의면접 목록 조회
     // 목록 진입 시 가장 빈번히 조회되는 첫 페이지만 캐싱,
     // cursor 변경 및 limit 변경 요청은 캐시 대상에서 제외 (DB 직접 조회)
@@ -184,7 +208,10 @@ public class InterviewSessionService {
 
     // 모의면접 단건 삭제
     @Transactional
-    @CacheEvict(value = "interviewSessions", key = "'member:' + #requesterId")
+    @Caching(evict = {
+            @CacheEvict(value = "interviewSessions", key = "'member:' + #requesterId"),
+            @CacheEvict(value = "interviewDetail", key = "#interviewSessionId")
+    })
     public void deleteInterview(Long requesterId, Long interviewSessionId) {
         InterviewSession interviewSession = getInterviewSession(interviewSessionId);
         validateOwnership(requesterId, interviewSession);
@@ -267,6 +294,32 @@ public class InterviewSessionService {
         if (interviewAnswerRepository.existsByQuestion(interviewQuestion)) {
             throw new BusinessException(InterviewErrorCode.INTERVIEW_ANSWER_ALREADY_EXISTS);
         }
+    }
+
+    // DTO 변환
+    private InterviewSessionDetailResponse toInterviewSessionDetailResponse(
+            InterviewSession interviewSession, String sseTicket
+    ){
+        List<InterviewQuestion> questions = interviewQuestionRepository.findAllBySessionOrderByIdAsc(interviewSession);
+
+        // Map<Question id, InterviewAnswer content>
+        Map<Long, String> answerMap = interviewAnswerRepository
+                .findAllBySession(interviewSession).stream()
+                .collect(Collectors.toMap(
+                        i -> i.getQuestion().getId(),
+                        i -> i.getContent()
+                ));
+
+        List<InterviewQuestionDetailResponse> questionDetailResponses
+                = questions.stream()
+                .map(q -> InterviewQuestionDetailResponse.of(
+                        q, answerMap.get(q.getId())
+                ))
+                .toList();
+
+        return InterviewSessionDetailResponse.of(
+                interviewSession, questionDetailResponses, sseTicket
+        );
     }
 
 }

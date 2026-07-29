@@ -33,4 +33,6 @@ public interface InterviewQuestionRepository extends JpaRepository<InterviewQues
         ORDER BY q.id ASC
         """)
     List<InterviewQnaHistoryResponse> findQnaHistoryBySessionId(@Param("sessionId") Long sessionId);
+
+    List<InterviewQuestion> findAllBySessionOrderByIdAsc(InterviewSession interviewSession);
 }

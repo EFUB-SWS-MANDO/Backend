@@ -4,10 +4,7 @@ import com.example.sprout.domain.auth.security.AuthMember;
 import com.example.sprout.domain.interview.dto.request.CreateInterviewFeedbackRequest;
 import com.example.sprout.domain.interview.dto.request.CreateInterviewQuestionRequest;
 import com.example.sprout.domain.interview.dto.request.CreateInterviewSessionRequest;
-import com.example.sprout.domain.interview.dto.response.InterviewFeedbackResponse;
-import com.example.sprout.domain.interview.dto.response.InterviewSessionCursorResponse;
-import com.example.sprout.domain.interview.dto.response.InterviewSessionResponse;
-import com.example.sprout.domain.interview.dto.response.SubmitInterviewAnswerResponse;
+import com.example.sprout.domain.interview.dto.response.*;
 import com.example.sprout.domain.interview.service.InterviewSessionService;
 import com.example.sprout.global.common.response.ApiResponse;
 import jakarta.validation.Valid;
@@ -59,6 +56,25 @@ public class InterviewSessionController {
                 .status(HttpStatus.CREATED)
                 .body(ApiResponse.success("모의면접 답변 제출 성공", response));
     }
+
+    @GetMapping("/{interviewSessionId}")
+    public ResponseEntity<ApiResponse<InterviewSessionDetailResponse>> getInterview(
+            @AuthMember Long requesterId,
+            @PathVariable(name = "interviewSessionId") Long interviewSessionId
+    ) {
+        log.info("모의면접 상세 조회 요청, requesterId={}", requesterId);
+
+        InterviewSessionDetailResponse response = interviewSessionService
+                .getInterview(requesterId, interviewSessionId);
+
+        return ResponseEntity.ok(
+                ApiResponse.success(
+                        "모의면접 상세 조회 성공",
+                        response
+                )
+        );
+    }
+
 
     @GetMapping
     public ResponseEntity<ApiResponse<InterviewSessionCursorResponse>> getInterviews(
