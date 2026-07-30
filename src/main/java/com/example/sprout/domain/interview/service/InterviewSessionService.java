@@ -1,15 +1,15 @@
 package com.example.sprout.domain.interview.service;
 
+import com.example.sprout.domain.interview.dto.request.CreateInterviewFeedbackRequest;
 import com.example.sprout.domain.interview.dto.request.CreateInterviewQuestionRequest;
 import com.example.sprout.domain.interview.dto.request.CreateInterviewSessionRequest;
-import com.example.sprout.domain.interview.dto.response.InterviewFeedbackResponse;
-import com.example.sprout.domain.interview.dto.response.InterviewSessionCursorResponse;
-import com.example.sprout.domain.interview.dto.response.InterviewSessionResponse;
-import com.example.sprout.domain.interview.dto.response.SubmitInterviewAnswerResponse;
+import com.example.sprout.domain.interview.dto.response.*;
 import com.example.sprout.domain.interview.entity.InterviewAnswer;
 import com.example.sprout.domain.interview.entity.InterviewQuestion;
 import com.example.sprout.domain.interview.entity.InterviewSession;
 import com.example.sprout.domain.interview.enums.InterviewQuestionType;
+import com.example.sprout.domain.interview.enums.InterviewSessionStatus;
+import com.example.sprout.domain.interview.event.InterviewCompletedEvent;
 import com.example.sprout.domain.interview.exception.InterviewErrorCode;
 import com.example.sprout.domain.interview.repository.InterviewAnswerRepository;
 import com.example.sprout.domain.interview.repository.InterviewQuestionRepository;
@@ -25,12 +25,15 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.Caching;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -113,6 +116,27 @@ public class InterviewSessionService {
         return SubmitInterviewAnswerResponse.of(nextQuestion);
     }
 
+    // 모의면접 상세 조회
+    @Cacheable(
+            value = "interviewDetail",
+            key = "#interviewSessionId",
+            unless = "#result.status().name() != 'COMPLETED'" // 완료된 면접일 경우에만 캐시
+    )
+    public InterviewSessionDetailResponse getInterview(
+            Long requesterId, Long interviewSessionId
+    ) {
+        InterviewSession interviewSession = getInterviewSession(interviewSessionId);
+        validateOwnership(requesterId, interviewSession);
+
+        String sseTicket = (interviewSession.getStatus() == InterviewSessionStatus.IN_PROGRESS)
+                ? sseTicketService.issueTicket(interviewSession.getId())
+                : null;
+
+        log.info("[Cache Miss] 모의면접 상세 조회 완료 - requesterId={}, sessionId={}", requesterId, interviewSessionId);
+
+        return toInterviewSessionDetailResponse(interviewSession, sseTicket);
+    }
+
     // 모의면접 목록 조회
     // 목록 진입 시 가장 빈번히 조회되는 첫 페이지만 캐싱,
     // cursor 변경 및 limit 변경 요청은 캐시 대상에서 제외 (DB 직접 조회)
@@ -140,26 +164,54 @@ public class InterviewSessionService {
         );
     }
 
+    // 모의면접 마지막 답변 제출 및 총평 생성
+    @Transactional
+    public InterviewFeedbackResponse createFeedback(
+            Long requesterId, Long interviewSessionId, CreateInterviewFeedbackRequest request
+    ){
+        InterviewSession interviewSession = getInterviewSession(interviewSessionId);
+        validateOwnership(requesterId, interviewSession);
+        validateInProgress(interviewSession);
+
+        InterviewQuestion interviewQuestion = getInterviewQuestion(request.questionId());
+        validateQuestionBelongsToSession(interviewQuestion, interviewSession);
+        validateAnswerNotSubmitted(interviewQuestion);
+
+        InterviewAnswer interviewAnswer = InterviewAnswer.builder()
+                .session(interviewSession)
+                .question(interviewQuestion)
+                .content(request.answer())
+                .build();
+        interviewAnswerRepository.save(interviewAnswer);
+
+        InterviewFeedbackResult result = questionGenerationService.generateFeedback(interviewSession);
+
+        interviewSession.complete();
+        interviewSession.recordFeedbackResult(result.feedbackSummary(), result.feedback());
+
+        eventPublisher.publishEvent(new InterviewCompletedEvent(interviewSessionId));
+
+        log.info("모의면접 총평 생성 완료 - requesterId={}, interviewSessionId={}", requesterId, interviewSessionId);
+        return InterviewFeedbackResponse.from(interviewSession);
+    }
+
     // 모의면접 총평 조회
     public InterviewFeedbackResponse getFeedback(Long requesterId, Long interviewSessionId) {
         InterviewSession interviewSession = getInterviewSession(interviewSessionId);
         validateOwnership(requesterId, interviewSession);
-        validateFeedbackExists(interviewSession);
+        validateFeedbackNotFound(interviewSession);
 
         log.info("모의면접 총평 조회 완료 - requesterId={}, interviewSessionId={}", requesterId, interviewSessionId);
 
         return InterviewFeedbackResponse.from(interviewSession);
     }
 
-    private void validateFeedbackExists(InterviewSession interviewSession) {
-        if(!interviewSession.hasFeedback()) {
-            throw new BusinessException(InterviewErrorCode.INTERVIEW_FEEDBACK_NOT_FOUND);
-        }
-    }
-
     // 모의면접 단건 삭제
     @Transactional
-    @CacheEvict(value = "interviewSessions", key = "'member:' + #requesterId")
+    @Caching(evict = {
+            @CacheEvict(value = "interviewSessions", key = "'member:' + #requesterId"),
+            @CacheEvict(value = "interviewDetail", key = "#interviewSessionId")
+    })
     public void deleteInterview(Long requesterId, Long interviewSessionId) {
         InterviewSession interviewSession = getInterviewSession(interviewSessionId);
         validateOwnership(requesterId, interviewSession);
@@ -214,6 +266,20 @@ public class InterviewSessionService {
         );
     }
 
+    // 총평이 없으면 404
+    private void validateFeedbackNotFound(InterviewSession interviewSession) {
+        if(!interviewSession.hasFeedback()) {
+            throw new BusinessException(InterviewErrorCode.INTERVIEW_FEEDBACK_NOT_FOUND);
+        }
+    }
+
+    // 세션이 진행 중(IN_PROGRESS)이 아니면 409
+    private void validateInProgress(InterviewSession interviewSession) {
+        if (interviewSession.getStatus() != InterviewSessionStatus.IN_PROGRESS) {
+            throw new BusinessException(InterviewErrorCode.INTERVIEW_ALREADY_COMPLETED);
+        }
+    }
+
     // 질문이 해당 세션 소속인지 검증
     private void validateQuestionBelongsToSession(
             InterviewQuestion interviewQuestion, InterviewSession interviewSession
@@ -228,6 +294,32 @@ public class InterviewSessionService {
         if (interviewAnswerRepository.existsByQuestion(interviewQuestion)) {
             throw new BusinessException(InterviewErrorCode.INTERVIEW_ANSWER_ALREADY_EXISTS);
         }
+    }
+
+    // DTO 변환
+    private InterviewSessionDetailResponse toInterviewSessionDetailResponse(
+            InterviewSession interviewSession, String sseTicket
+    ){
+        List<InterviewQuestion> questions = interviewQuestionRepository.findAllBySessionOrderByIdAsc(interviewSession);
+
+        // Map<Question id, InterviewAnswer content>
+        Map<Long, String> answerMap = interviewAnswerRepository
+                .findAllBySession(interviewSession).stream()
+                .collect(Collectors.toMap(
+                        i -> i.getQuestion().getId(),
+                        i -> i.getContent()
+                ));
+
+        List<InterviewQuestionDetailResponse> questionDetailResponses
+                = questions.stream()
+                .map(q -> InterviewQuestionDetailResponse.of(
+                        q, answerMap.get(q.getId())
+                ))
+                .toList();
+
+        return InterviewSessionDetailResponse.of(
+                interviewSession, questionDetailResponses, sseTicket
+        );
     }
 
 }
