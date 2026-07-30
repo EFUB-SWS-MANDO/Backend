@@ -1,15 +1,19 @@
 package com.example.sprout.domain.interview.controller;
 
 import com.example.sprout.domain.auth.security.AuthMember;
-import com.example.sprout.domain.interview.dto.response.InterviewFeedbackResponse;
-import com.example.sprout.domain.interview.dto.response.InterviewSessionCursorResponse;
+import com.example.sprout.domain.interview.dto.request.CreateInterviewFeedbackRequest;
+import com.example.sprout.domain.interview.dto.request.CreateInterviewQuestionRequest;
+import com.example.sprout.domain.interview.dto.request.CreateInterviewSessionRequest;
+import com.example.sprout.domain.interview.dto.response.*;
 import com.example.sprout.domain.interview.service.InterviewSessionService;
 import com.example.sprout.global.common.response.ApiResponse;
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.Positive;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
@@ -22,6 +26,54 @@ import org.springframework.web.bind.annotation.*;
 public class InterviewSessionController {
 
     private final InterviewSessionService interviewSessionService;
+
+    @PostMapping
+    public ResponseEntity<ApiResponse<InterviewSessionResponse>> createInterview(
+            @AuthMember Long requesterId,
+            @Valid @RequestBody CreateInterviewSessionRequest request
+            ) {
+        log.info("모의면접 생성 요청, requesterId={}", requesterId);
+
+        InterviewSessionResponse response = interviewSessionService.createInterview(requesterId, request);
+
+        return ResponseEntity
+                .status(HttpStatus.CREATED)
+                .body(ApiResponse.success("모의면접 생성 성공", response));
+    }
+
+    @PostMapping("/{interviewSessionId}/question")
+    public ResponseEntity<ApiResponse<SubmitInterviewAnswerResponse>> createQuestion(
+            @AuthMember Long requesterId,
+            @PathVariable("interviewSessionId") Long interviewSessionId,
+            @Valid @RequestBody CreateInterviewQuestionRequest request
+    ) {
+        log.info("모의면접 질문 생성 요청, requesterId={}", requesterId);
+
+        SubmitInterviewAnswerResponse response = interviewSessionService
+                .createQuestion(requesterId, interviewSessionId, request);
+
+        return ResponseEntity
+                .status(HttpStatus.CREATED)
+                .body(ApiResponse.success("모의면접 답변 제출 성공", response));
+    }
+
+    @GetMapping("/{interviewSessionId}")
+    public ResponseEntity<ApiResponse<InterviewSessionDetailResponse>> getInterview(
+            @AuthMember Long requesterId,
+            @PathVariable(name = "interviewSessionId") Long interviewSessionId
+    ) {
+        log.info("모의면접 상세 조회 요청, requesterId={}", requesterId);
+
+        InterviewSessionDetailResponse response = interviewSessionService
+                .getInterview(requesterId, interviewSessionId);
+
+        return ResponseEntity.ok(
+                ApiResponse.success(
+                        "모의면접 상세 조회 성공",
+                        response
+                )
+        );
+    }
 
 
     @GetMapping
@@ -40,6 +92,20 @@ public class InterviewSessionController {
                         response
                 )
         );
+    }
+
+    @PostMapping("/{interviewSessionId}/feedback")
+    public ResponseEntity<ApiResponse<InterviewFeedbackResponse>> createInterviewFeedback(
+            @AuthMember Long requesterId,
+            @PathVariable(name = "interviewSessionId") Long interviewSessionId,
+            @Valid @RequestBody CreateInterviewFeedbackRequest request
+    ) {
+        log.info("모의면접 총평 생성 요청, requesterId={}, interviewSessionId={}", requesterId, interviewSessionId);
+
+        InterviewFeedbackResponse response = interviewSessionService.createFeedback(requesterId, interviewSessionId, request);
+
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(ApiResponse.success("모의면접 총평 생성 성공", response));
     }
 
     @GetMapping("/{interviewSessionId}/feedback")
