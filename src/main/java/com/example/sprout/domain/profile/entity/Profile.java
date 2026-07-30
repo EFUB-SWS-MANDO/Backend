@@ -47,7 +47,7 @@ public class Profile extends BaseTimeEntity {
 
     public void updateProfile (String nickname, String profileImage, String bio) {
         if (nickname != null) this.nickname = nickname;
-        if (profileImage!= null) this.profileImage = profileImage;
+        if (profileImage != null) this.profileImage = profileImage.isBlank() ? null : profileImage;
         if (bio != null) this.bio = bio;
     }
 

@@ -97,7 +97,7 @@ public class ProfileService {
 
     //S3 이미지 key 검증 메소드
     private void validateProfileImageKey(Long memberId, String profileImage) {
-        if (profileImage == null) return;
+        if (profileImage == null || profileImage.isBlank()) return;
 
         String prefix = "profiles/" + memberId + "/";
         if (!profileImage.startsWith(prefix)) {
