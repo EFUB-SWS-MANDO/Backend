@@ -42,7 +42,7 @@ public class FollowService {
     public FollowCreateResponse createFollow(Long requesterId, Long followeeId) {
 
         validateNotSelfFollow(requesterId, followeeId);
-        validateMembersExist(requesterId);
+        validateMembersExist(followeeId);
 
         Member requester = memberRepository.getReferenceById(requesterId);
         Member followee = memberRepository.getReferenceById(followeeId);
