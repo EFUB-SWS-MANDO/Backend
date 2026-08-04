@@ -4,7 +4,9 @@ import com.example.sprout.domain.member.entity.Member;
 import com.example.sprout.domain.post.entity.Post;
 import com.example.sprout.domain.post.entity.PostLike;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import java.util.List;
 import java.util.Optional;
@@ -19,5 +21,8 @@ public interface PostLikeRepository extends JpaRepository<PostLike, Long> {
     List<Long> findLikedPostIdsByMemberIdAndPostIdIn(Long requesterId, List<Long> postIds);
 
     boolean existsByMemberAndPost(Member member, Post post);
-    long deleteByMemberAndPost(Member member, Post post);
+
+    @Modifying
+    @Query("DELETE FROM PostLike pl WHERE pl.member = :member AND pl.post = :post")
+    long deleteByMemberAndPost(@Param("member") Member member, @Param("post") Post post);
 }
