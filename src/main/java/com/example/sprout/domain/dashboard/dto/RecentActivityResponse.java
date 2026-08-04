@@ -8,25 +8,26 @@ import com.example.sprout.domain.resume.entity.Resume;
 import java.time.LocalDateTime;
 
 public record RecentActivityResponse(
+        Long id,
         ActivityType type,
         String title,
         LocalDateTime updatedAt
 ) {
     public static RecentActivityResponse of(ActivityType type, Post post) {
         return new RecentActivityResponse(
-                type, post.getTitle(), post.getUpdatedAt()
+                post.getId(), type, post.getTitle(), post.getUpdatedAt()
         );
     }
 
     public static RecentActivityResponse of(ActivityType type, Resume resume) {
         return new RecentActivityResponse(
-                type, resume.getTitle(), resume.getUpdatedAt()
+                resume.getId(), type, resume.getTitle(), resume.getUpdatedAt()
         );
     }
 
     public static RecentActivityResponse of(ActivityType type, InterviewSession interviewSession) {
         return new RecentActivityResponse(
-                type, interviewSession.getTitle(), interviewSession.getUpdatedAt()
+                interviewSession.getId(), type, interviewSession.getTitle(), interviewSession.getUpdatedAt()
         );
     }
 }
