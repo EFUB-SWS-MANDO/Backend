@@ -13,11 +13,11 @@ import java.util.List;
 
 public interface InterviewAnswerRepository extends JpaRepository<InterviewAnswer, Long> {
 
-    @Modifying(clearAutomatically = true)
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("DELETE FROM InterviewAnswer i WHERE i.session = :session")
     int deleteAllBySession(@Param("session") InterviewSession interviewSession);
 
-    @Modifying(clearAutomatically = true)
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("DELETE FROM InterviewAnswer i WHERE i.session.member = :member")
     int deleteAllByMember(@Param("member") Member member);
 

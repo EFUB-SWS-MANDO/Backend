@@ -94,9 +94,9 @@ class MemberServiceTest {
         );
         inOrder.verify(profileService).deleteByMember(member);
         inOrder.verify(postLikeService).deleteByMember(member);
+        inOrder.verify(resumeService).deleteByMember(member);
         inOrder.verify(postService).deletePostByMember(member);
         inOrder.verify(commentService).softDeleteAllByAuthor(memberId);
-        inOrder.verify(resumeService).deleteByMember(member);
         inOrder.verify(interviewSessionService).deleteAllByMember(member);
         inOrder.verify(followService).deleteFollowByMember(member);
         inOrder.verify(memberRepository).delete(member);

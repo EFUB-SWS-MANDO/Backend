@@ -15,4 +15,8 @@ public interface ResumeSourcePostRepository extends JpaRepository<ResumeSourcePo
     @Modifying
     @Query("DELETE FROM ResumeSourcePost rsp WHERE rsp.resume.id = :resumeId")
     void deleteAllByResumeId(Long resumeId);
+
+    @Modifying
+    @Query("DELETE FROM ResumeSourcePost rsp WHERE rsp.post.id = :postId")
+    void deleteAllByPostId(Long postId);
 }
