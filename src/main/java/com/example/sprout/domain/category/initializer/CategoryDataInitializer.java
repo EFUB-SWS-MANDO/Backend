@@ -20,7 +20,7 @@ public class CategoryDataInitializer implements CommandLineRunner {
     private static final List<String> CATEGORIES = List.of(
             "COLLABORATION", "PROBLEM_SOLVING", "COMMUNICATION",
             "LEADERSHIP", "CHALLENGE", "ACHIEVEMENT", "GROWTH",
-            "PROFESSIONAL_SKILLS", "CREATIVITY", "CONFLICT_MANAGEMENT",
+            "PROFESSIONAL_SKILLS", "CREATIVITY", "RESPONSIBILITY", "CONFLICT_MANAGEMENT",
             "PLANNING", "EXTERNAL_ACTIVITY", "CONTEST", "ETC"
     );
 
