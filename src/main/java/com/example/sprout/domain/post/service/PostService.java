@@ -33,6 +33,7 @@ import com.example.sprout.domain.post.repository.projection.PostCommentCount;
 import com.example.sprout.domain.profile.entity.Profile;
 import com.example.sprout.domain.profile.exception.ProfileErrorCode;
 import com.example.sprout.domain.profile.repository.ProfileRepository;
+import com.example.sprout.domain.resume.service.ResumeService;
 import com.example.sprout.global.error.BusinessException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -70,6 +71,7 @@ public class PostService {
     private final PostFileService postFileService;
     private final S3PresignedUrlService s3PresignedUrlService;
     private final CategoryClassificationService categoryClassificationService;
+    private final ResumeService resumeService;
 
     private record SummaryLookup(
             Map<Long, Profile> profileMap,
@@ -187,6 +189,7 @@ public class PostService {
         commentService.deleteByPost(post);
         postLikeService.deleteByPost(post);
         postCategoryService.deleteByPost(post);
+        resumeService.deleteByPost(post);
 
         //이미지 삭제
         postFileService.deleteByPost(post);

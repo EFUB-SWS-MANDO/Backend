@@ -40,12 +40,12 @@ public class MemberService {
         Member member = getMemberById(memberId);
 
         //Member를 가지는 자식 엔티티 우선 삭제
-        //Profile -> Comment -> PostLike -> Post -> Resume -> Interview -> Follow
+        //Profile -> PostLike -> Resume -> Post -> Comment -> Interview -> Follow
         profileService.deleteByMember(member);
         postLikeService.deleteByMember(member);
+        resumeService.deleteByMember(member);
         postService.deletePostByMember(member);
         commentService.softDeleteAllByAuthor(memberId);
-        resumeService.deleteByMember(member);
         interviewSessionService.deleteAllByMember(member);
         followService.deleteFollowByMember(member);
 
