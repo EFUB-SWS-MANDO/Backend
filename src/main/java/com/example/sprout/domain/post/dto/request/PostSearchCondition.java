@@ -15,13 +15,13 @@ public record PostSearchCondition(
         @BindParam("nextCursor")
         String cursor,
         @Max(50)
-        int limit
+        Integer limit
 
 ) {
     public PostSearchCondition {
 
         if (sortBy == null || sortBy.isBlank()) sortBy = "createdAt";
         if (sortDirection == null || sortDirection.isBlank()) sortDirection = "desc";
-        if (limit <= 0) limit = 10;
+        if (limit == null || limit <= 0) limit = 10;
     }
 }
