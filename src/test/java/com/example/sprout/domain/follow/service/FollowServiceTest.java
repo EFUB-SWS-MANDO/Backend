@@ -59,7 +59,6 @@ public class FollowServiceTest {
     @DisplayName("팔로우 생성 성공")
     void createFollow_Success() {
         // given
-        given(memberRepository.existsById(requesterId)).willReturn(true);
         given(memberRepository.existsById(followeeId)).willReturn(true);
         given(memberRepository.getReferenceById(requesterId)).willReturn(requester);
         given(memberRepository.getReferenceById(followeeId)).willReturn(followee);
@@ -74,7 +73,6 @@ public class FollowServiceTest {
         assertThat(response).isNotNull();
         assertThat(response.followerId()).isEqualTo(requesterId);
         assertThat(response.followeeId()).isEqualTo(followeeId);
-        verify(memberRepository).existsById(requesterId);
         verify(memberRepository).existsById(followeeId);
         verify(memberRepository).getReferenceById(requesterId);
         verify(memberRepository).getReferenceById(followeeId);
@@ -82,26 +80,9 @@ public class FollowServiceTest {
     }
 
     @Test
-    @DisplayName("존재하지 않는 유저로 팔로우 시도 시 실패")
-    void createFollow_NotFoundMember_Fail() {
-        // given
-        given(memberRepository.existsById(requesterId)).willReturn(true);
-        given(memberRepository.existsById(followeeId)).willReturn(false);
-
-        // when & then
-        BusinessException exception = assertThrows(
-                BusinessException.class,
-                () -> followService.createFollow(requesterId, followeeId)
-        );
-        assertThat(exception.getErrorCode()).isEqualTo(MemberErrorCode.MEMBER_NOT_FOUND);
-        verify(followRepository, never()).save(any(Follow.class));
-    }
-
-    @Test
     @DisplayName("이미 팔로우하는 유저를 팔로우 시도 시 실패")
     void createFollow_AlreadyFollowedMember_Fail() {
         // given
-        given(memberRepository.existsById(requesterId)).willReturn(true);
         given(memberRepository.existsById(followeeId)).willReturn(true);
         given(memberRepository.getReferenceById(requesterId)).willReturn(requester);
         given(memberRepository.getReferenceById(followeeId)).willReturn(followee);
