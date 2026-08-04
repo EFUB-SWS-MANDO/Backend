@@ -10,7 +10,7 @@ public record PostSearchCondition(
         String sortDirection,
         List<String> category,
         Long author,
-        boolean followingOnly,
+        Boolean followingOnly,
         String keyword,
         @BindParam("nextCursor")
         String cursor,
@@ -22,6 +22,7 @@ public record PostSearchCondition(
 
         if (sortBy == null || sortBy.isBlank()) sortBy = "createdAt";
         if (sortDirection == null || sortDirection.isBlank()) sortDirection = "desc";
+        if (followingOnly == null) followingOnly = false;
         if (limit == null || limit <= 0) limit = 10;
     }
 }
