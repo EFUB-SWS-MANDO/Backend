@@ -187,6 +187,11 @@ public class ResumeService {
         resumeRepository.deleteAllByAuthor(member);
     }
 
+    @Transactional
+    public void deleteByPost(Post post) {
+        resumeSourcePostRepository.deleteAllByPostId(post.getId());
+    }
+
 
     // Helper 함수
 
