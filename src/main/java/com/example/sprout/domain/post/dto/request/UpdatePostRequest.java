@@ -6,7 +6,7 @@ import jakarta.validation.constraints.Size;
 import java.util.List;
 
 public record UpdatePostRequest(
-        @Size(min=1, max=20)
+        @Size(min=1, max=50, message = "게시글의 제목은 1자 이상, 50자 이하입니다.")
         String title,
         String content,
         @NotNull

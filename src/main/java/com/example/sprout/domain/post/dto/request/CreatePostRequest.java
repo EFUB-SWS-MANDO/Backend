@@ -10,7 +10,7 @@ import java.util.List;
 
 public record CreatePostRequest(
     @NotBlank(message = "게시글 제목은 필수입니다.")
-    @Size(min=1, max=20, message = "게시글의 제목은 1자 이상, 20자 이하입니다.")
+    @Size(min=1, max=50, message = "게시글의 제목은 1자 이상, 50자 이하입니다.")
     String title,
     @NotBlank(message = "게시글 내용이 없습니다.")
     String content,
