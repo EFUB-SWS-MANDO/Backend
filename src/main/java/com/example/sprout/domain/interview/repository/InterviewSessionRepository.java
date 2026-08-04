@@ -33,7 +33,7 @@ public interface InterviewSessionRepository extends JpaRepository<InterviewSessi
 
     long countAllByMemberId(Long memberId);
 
-    @Modifying(clearAutomatically = true)
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("DELETE FROM InterviewSession i WHERE i.member = :member")
     int deleteAllByMember(@Param("member") Member member);
 }
