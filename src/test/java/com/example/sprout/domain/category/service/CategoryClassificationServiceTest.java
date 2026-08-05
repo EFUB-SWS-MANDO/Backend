@@ -1,6 +1,7 @@
 package com.example.sprout.domain.category.service;
 
 import com.example.sprout.domain.category.dto.CategoryDto;
+import com.example.sprout.domain.category.dto.CategoryListResponse;
 import com.example.sprout.domain.category.entity.Category;
 import com.example.sprout.domain.category.repository.CategoryRepository;
 import com.example.sprout.global.ai.client.AiChatClient;
@@ -15,6 +16,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -46,7 +48,14 @@ class CategoryClassificationServiceTest {
     void setUp() {
         given(promptTemplateLoader.load(anyString()))
                 .willReturn(new PromptTemplateLoader.PromptTemplate("dummy prompt"));
-        given(categoryService.getCategories()).willReturn(CategoryDto.of(ALLOWED));
+
+        List<CategoryDto> categoryDtos = new ArrayList<>();
+        for (int i = 0; i < ALLOWED.size(); i++) {
+            Long idIdx = (long) i + 1;
+            categoryDtos.add(new CategoryDto(idIdx, ALLOWED.get(i)));
+        }
+
+        given(categoryService.getCategories()).willReturn(CategoryListResponse.of(categoryDtos));
     }
 
     private Category category(String type) {

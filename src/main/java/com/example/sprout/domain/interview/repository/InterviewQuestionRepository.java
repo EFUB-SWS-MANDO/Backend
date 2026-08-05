@@ -4,12 +4,15 @@ import com.example.sprout.domain.interview.dto.response.InterviewQnaHistoryRespo
 import com.example.sprout.domain.interview.entity.InterviewQuestion;
 import com.example.sprout.domain.interview.entity.InterviewSession;
 import com.example.sprout.domain.member.entity.Member;
+import jakarta.persistence.LockModeType;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.util.List;
+import java.util.Optional;
 
 public interface InterviewQuestionRepository extends JpaRepository<InterviewQuestion, Long> {
 
@@ -35,4 +38,8 @@ public interface InterviewQuestionRepository extends JpaRepository<InterviewQues
     List<InterviewQnaHistoryResponse> findQnaHistoryBySessionId(@Param("sessionId") Long sessionId);
 
     List<InterviewQuestion> findAllBySessionOrderByIdAsc(InterviewSession interviewSession);
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT q FROM InterviewQuestion q WHERE q.id = :questionId")
+    Optional<InterviewQuestion> findByIdWithLock(@Param("questionId") Long interviewQuestionId);
 }

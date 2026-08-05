@@ -89,7 +89,7 @@ public class InterviewSessionService {
         InterviewSession interviewSession = getInterviewSession(interviewSessionId);
         validateOwnership(requesterId, interviewSession);
 
-        InterviewQuestion currentQuestion = getInterviewQuestion(request.questionId());
+        InterviewQuestion currentQuestion = getInterviewQuestionWithLock(request.questionId());
         validateQuestionBelongsToSession(currentQuestion, interviewSession);
         validateAnswerNotSubmitted(currentQuestion);
 
@@ -173,7 +173,7 @@ public class InterviewSessionService {
         validateOwnership(requesterId, interviewSession);
         validateInProgress(interviewSession);
 
-        InterviewQuestion interviewQuestion = getInterviewQuestion(request.questionId());
+        InterviewQuestion interviewQuestion = getInterviewQuestionWithLock(request.questionId());
         validateQuestionBelongsToSession(interviewQuestion, interviewSession);
         validateAnswerNotSubmitted(interviewQuestion);
 
@@ -239,6 +239,11 @@ public class InterviewSessionService {
     private InterviewSession getInterviewSession(Long interviewSessionId) {
         return interviewSessionRepository.findById(interviewSessionId)
                 .orElseThrow(() -> new BusinessException(InterviewErrorCode.INTERVIEW_NOT_FOUND));
+    }
+
+    private InterviewQuestion getInterviewQuestionWithLock(Long interviewQuestionId) {
+        return interviewQuestionRepository.findByIdWithLock(interviewQuestionId)
+                .orElseThrow(() -> new BusinessException(InterviewErrorCode.INTERVIEW_QUESTION_NOT_FOUND));
     }
 
     private InterviewQuestion getInterviewQuestion(Long interviewQuestionId) {
