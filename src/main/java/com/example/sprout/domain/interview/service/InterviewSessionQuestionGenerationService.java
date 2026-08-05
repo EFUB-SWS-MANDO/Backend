@@ -203,7 +203,7 @@ public class InterviewSessionQuestionGenerationService {
 
         return AiChatRequest.builder()
                 .messages(List.of(new AiMessage("system", systemPrompt)))
-                .maxTokens(5000)
+                .maxTokens(30000)
                 .build();
     }
 
