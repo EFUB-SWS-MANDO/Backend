@@ -45,7 +45,11 @@ public class OpenAiChatClient implements AiChatClient {
         log.info("OpenAI raw response: {}", result);
 
         String content = result.at("/choices/0/message/content").asText();
-        return new AiChatResponse(content);
+        String finishReason = result.at("/choices/0/finish_reason").asText(null);
+        JsonNode reasoningNode = result.at("/usage/completion_tokens_details/reasoning_tokens");
+        Integer reasoningTokens = reasoningNode.isMissingNode() ? null : reasoningNode.asInt();
+
+        return new AiChatResponse(content, finishReason, reasoningTokens);
     }
 
     @Override
