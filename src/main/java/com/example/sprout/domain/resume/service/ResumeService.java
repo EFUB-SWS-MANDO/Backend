@@ -35,6 +35,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.awt.*;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -283,10 +284,24 @@ public class ResumeService {
         AiChatRequest aiChatRequest = AiChatRequest.builder()
                 .messages(List.of(new AiMessage("system", systemPrompt)))
                 .temperature(1.0)
-                .maxTokens(Math.min(2500 * questions.size(), 8000))
+                .maxTokens(Math.min(6000 * questions.size(), 30000))
+                .reasoningEffort("minimal")
                 .build();
 
         AiChatResponse response = aiChatClient.chat(aiChatRequest);
+
+        if ("length".equals(response.finishReason())) {
+            log.warn("AI 토큰 예산 초과 - reasoningTokens={}, maxTokens={}, questionCount={}",
+                    response.reasoningTokens(),
+                    aiChatRequest.maxTokens(),
+                    questions.size());
+            throw new BusinessException(ResumeErrorCode.AI_TOKEN_BUDGET_EXCEEDED);
+        }
+
+        if (response.content() == null || response.content().isBlank()) {
+            throw new BusinessException(ResumeErrorCode.AI_ANSWER_MISSING);
+        }
+
         return parser.parse(response.content());
     }
 

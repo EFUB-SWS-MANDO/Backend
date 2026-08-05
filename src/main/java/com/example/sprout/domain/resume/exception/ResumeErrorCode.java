@@ -10,6 +10,7 @@ import org.springframework.http.HttpStatus;
 public enum ResumeErrorCode implements ErrorCode{
 
     AI_ANSWER_MISSING(HttpStatus.FAILED_DEPENDENCY, "AI 응답이 누락되었습니다."),
+    AI_TOKEN_BUDGET_EXCEEDED(HttpStatus.FAILED_DEPENDENCY, "추론 토큰 소모로 AI 응답 생성에 실패했습니다."),
     AI_RESPONSE_PARSE_FAILED(HttpStatus.BAD_GATEWAY, "AI 응답 JSON 파싱에 실패했습니다."),
     RESUME_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 자기소개서입니다."),
     RESUME_ACCESS_DENIED(HttpStatus.FORBIDDEN, "권한이 없습니다.");
