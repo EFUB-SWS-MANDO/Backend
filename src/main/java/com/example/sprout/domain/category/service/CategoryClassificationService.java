@@ -1,5 +1,6 @@
 package com.example.sprout.domain.category.service;
 
+import com.example.sprout.domain.category.dto.CategoryDto;
 import com.example.sprout.domain.category.entity.Category;
 import com.example.sprout.domain.category.parser.CategoryResponseParser;
 import com.example.sprout.domain.category.repository.CategoryRepository;
@@ -30,7 +31,9 @@ public class CategoryClassificationService {
 
     public List<Category> classifyCategory(String title, String content) {
 
-        List<String> allowed = categoryService.getCategories().categories();
+        List<String> allowed = categoryService.getCategories()
+                .categories().stream()
+                .map(CategoryDto::type).toList();
 
         //프롬프트
         String systemPrompt = buildSystemPrompt();

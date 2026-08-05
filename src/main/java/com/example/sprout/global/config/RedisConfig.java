@@ -1,6 +1,6 @@
 package com.example.sprout.global.config;
 
-import com.example.sprout.domain.category.dto.CategoryDto;
+import com.example.sprout.domain.category.dto.CategoryListResponse;
 import com.example.sprout.domain.interview.dto.response.InterviewSessionDetailResponse;
 import com.example.sprout.domain.motivation.entity.Motivation;
 import com.example.sprout.domain.interview.dto.response.InterviewSessionCursorResponse;
@@ -40,8 +40,8 @@ public class RedisConfig {
         JacksonJsonRedisSerializer<TemplateDto> templateSerializer =
                 new JacksonJsonRedisSerializer<>(objectMapper, TemplateDto.class);
 
-        JacksonJsonRedisSerializer<CategoryDto> categoriesSerializer =
-                new JacksonJsonRedisSerializer<>(objectMapper, CategoryDto.class);
+        JacksonJsonRedisSerializer<CategoryListResponse> categoriesSerializer =
+                new JacksonJsonRedisSerializer<>(objectMapper, CategoryListResponse.class);
 
         JacksonJsonRedisSerializer<InterviewSessionCursorResponse> interviewSessionCursorSerializer =
                 new JacksonJsonRedisSerializer<>(objectMapper, InterviewSessionCursorResponse.class);
