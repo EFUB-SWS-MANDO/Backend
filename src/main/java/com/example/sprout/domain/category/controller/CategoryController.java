@@ -1,7 +1,7 @@
 package com.example.sprout.domain.category.controller;
 
 import com.example.sprout.domain.auth.security.AuthMember;
-import com.example.sprout.domain.category.dto.CategoryDto;
+import com.example.sprout.domain.category.dto.CategoryListResponse;
 import com.example.sprout.domain.category.service.CategoryService;
 import com.example.sprout.global.common.response.ApiResponse;
 import lombok.RequiredArgsConstructor;
@@ -10,8 +10,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-
-import java.util.List;
 
 @RestController
 @RequiredArgsConstructor
@@ -22,12 +20,12 @@ public class CategoryController {
     private  final CategoryService categoryService;
 
     @GetMapping
-    public ResponseEntity<ApiResponse<CategoryDto>> getCategories(
+    public ResponseEntity<ApiResponse<CategoryListResponse>> getCategories(
             @AuthMember Long memberId
     ) {
         log.info("category 조회 요청, requesterId={}", memberId);
 
-        CategoryDto response = categoryService.getCategories();
+        CategoryListResponse response = categoryService.getCategories();
 
         return ResponseEntity.ok(
                 ApiResponse.success(
