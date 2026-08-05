@@ -1,6 +1,7 @@
 package com.example.sprout.domain.category.service;
 
 import com.example.sprout.domain.category.dto.CategoryDto;
+import com.example.sprout.domain.category.dto.CategoryListResponse;
 import com.example.sprout.domain.category.entity.Category;
 import com.example.sprout.domain.category.repository.CategoryRepository;
 import com.example.sprout.support.IntegrationTestSupport;
@@ -47,20 +48,20 @@ public class CategoryServiceTest extends IntegrationTestSupport {
     @DisplayName("첫 조회 - DB 조회, 두 번째 조회 - 캐시 조회")
     void getCategories() {
         // when
-        CategoryDto first = categoryService.getCategories();
+        CategoryListResponse first = categoryService.getCategories();
 
         await()
                 .atMost(Duration.ofSeconds(2))
                 .pollInterval(Duration.ofMillis(20))
                 .untilAsserted(() -> {
-                    Boolean hasKey = redisTemplate.hasKey("categories::all");
+                    Boolean hasKey = redisTemplate.hasKey("categories::list");
                     assertThat(hasKey).isTrue();
                 });
 
-        CategoryDto second = categoryService.getCategories();
+        CategoryListResponse second = categoryService.getCategories();
 
         // then
-        assertThat(first.categories()).containsExactly("COLLABORATION");
+        assertThat(first.categories()).extracting(CategoryDto::type).containsExactly("COLLABORATION");
         assertThat(second).isEqualTo(first);
         verify(categoryRepository, times(1)).findAll();
     }
