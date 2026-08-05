@@ -44,8 +44,8 @@ public class OpenAiChatClient implements AiChatClient {
 
         log.info("OpenAI raw response: {}", result);
 
-        String content = result.at("/choices/0/message/content").asText();
-        String finishReason = result.at("/choices/0/finish_reason").asText(null);
+        String content = result.at("/choices/0/message/content").asString();
+        String finishReason = result.at("/choices/0/finish_reason").asString(null);
         JsonNode reasoningNode = result.at("/usage/completion_tokens_details/reasoning_tokens");
         Integer reasoningTokens = reasoningNode.isMissingNode() ? null : reasoningNode.asInt();
 
@@ -90,7 +90,7 @@ public class OpenAiChatClient implements AiChatClient {
         try {
             JsonNode node = objectMapper.readTree(json);
             JsonNode delta = node.at("/choices/0/delta/content");
-            return delta.isMissingNode() ? null : delta.asText(); // mapNotNull이 null은 걸러줌
+            return delta.isMissingNode() ? null : delta.asString(); // mapNotNull이 null은 걸러줌
         } catch (Exception e) {
             throw new AiCallException("AI 응답 파싱 실패: " + json, e);
         }
